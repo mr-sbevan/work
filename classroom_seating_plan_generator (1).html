@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classroom Random Seating Plan Generator</title>
+  <style>
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --border-light: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-tint: #eff6ff;
+      --accent: #0f766e;
+      --desk-border: #b45309;
+      --desk-header: #fef3c7;
+      --desk-surface: #fffbeb;
+      --desk-seam: #d97706;
+      --success: #059669;
+      --danger: #dc2626;
+      --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.07);
+      --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.4;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Error Banner */
+    #runtimeErrorBanner {
+      display: none;
+      background: #fee2e2;
+      color: #991b1b;
+      border-bottom: 2px solid #dc2626;
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* Header */
+    .topbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #1e3a8a);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 13px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-subtle);
+      border-color: #94a3b8;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #ffffff;
+    }
+
+    .btn-success:hover {
+      background: #047857;
+      border-color: #047857;
+    }
+
+    .btn-sm {
+      padding: 5px 9px;
+      font-size: 0.78rem;
+    }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ctrl-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+
+    .ctrl-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+    }
+
+    .seg-group {
+      display: inline-flex;
+      background: #e2e8f0;
+      padding: 2px;
+      border-radius: 6px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .seg-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .step-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-tint);
+    }
+
+    .step-val {
+      min-width: 24px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+
+    .ctrl-select, .ctrl-input {
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .capacity-pill {
+      margin-left: auto;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 999px;
+    }
+
+    .capacity-pill strong {
+      color: var(--primary);
+    }
+
+    /* Main Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 18px;
+      padding: 18px 20px;
+      flex: 1;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .capacity-pill {
+        margin-left: 0;
+      }
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: sticky;
+      top: 76px;
+      max-height: calc(100vh - 96px);
+    }
+
+    @media (max-width: 920px) {
+      .sidebar {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    .side-block {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .side-heading {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .badge-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    /* File Drop Zone */
+    .upload-box {
+      border: 2px dashed #94a3b8;
+      border-radius: 9px;
+      background: var(--bg-subtle);
+      padding: 12px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .upload-box:hover, .upload-box.drag-active {
+      border-color: var(--primary);
+      background: var(--primary-tint);
+    }
+
+    .upload-box-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .upload-box-desc {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    /* Unseated Pool */
+    .unseated-box {
+      min-height: 70px;
+      max-height: 170px;
+      overflow-y: auto;
+      background: var(--bg-subtle);
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .unseated-box.drag-hover {
+      border-color: var(--primary);
+      background: var(--primary-tint);
+    }
+
+    .pool-placeholder {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 14px 6px;
+    }
+
+    .pool-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      cursor: grab;
+      font-size: 0.8rem;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .pool-card:hover {
+      border-color: var(--primary);
+      background: var(--primary-tint);
+    }
+
+    .pool-card.selected {
+      border: 2px solid var(--primary);
+      background: var(--primary-tint);
+    }
+
+    /* Roster List */
+    .roster-tools {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 5px;
+    }
+
+    .add-form input {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .roster-list {
+      overflow-y: auto;
+      padding: 8px 14px 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .roster-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 7px;
+      border-radius: 7px;
+      border: 1px solid var(--border-light);
+      background: #ffffff;
+      font-size: 0.8rem;
+    }
+
+    .roster-row.is-absent {
+      opacity: 0.55;
+      background: #f1f5f9;
+    }
+
+    .roster-info {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .mini-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      background: #e2e8f0;
+    }
+
+    .roster-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .form-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0369a1;
+      flex-shrink: 0;
+    }
+
+    .presence-btn {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 5px;
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #047857;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .roster-row.is-absent .presence-btn {
+      border-color: #fecaca;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* Classroom Area */
+    .classroom-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-xs);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .classroom-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .title-edit {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 4px 8px;
+      background: transparent;
+      min-width: 240px;
+      max-width: 100%;
+    }
+
+    .title-edit:hover, .title-edit:focus {
+      border-color: var(--border);
+      background: var(--bg-subtle);
+      outline: none;
+    }
+
+    .hint-pill {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    /* Board Banner */
+    .board-banner {
+      background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+      border: 2px solid #94a3b8;
+      border-radius: 9px;
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #334155;
+    }
+
+    .teacher-badge {
+      background: #fef3c7;
+      border: 1.5px solid #d97706;
+      color: #92400e;
+      padding: 2px 9px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+    }
+
+    /* Rows and Desks */
+    .rows-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .row-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .row-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .row-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+    }
+
+    .desks-row-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 4), minmax(215px, 1fr));
+      gap: 16px;
+    }
+
+    /* Rectangular Desk Pod */
+    .desk-pod {
+      background: var(--desk-surface);
+      border: 2px solid var(--desk-border);
+      border-radius: 10px;
+      box-shadow: 0 3px 0 #d97706, var(--shadow-xs);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .desk-pod-top {
+      background: var(--desk-header);
+      border-bottom: 1px solid #fcd34d;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: #92400e;
+    }
+
+    /*
+      Rectangular Desk Layouts:
+      - 2-seater: 2 columns x 1 row
+      - 4-seater rectangle (2 on each edge): 2 columns x 2 rows
+      - 6-seater rectangle (2 on each vertical edge / 3x2): 3 columns x 2 rows
+    */
+    .desk-rect-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--rect-cols, 2), 1fr);
+      grid-template-rows: repeat(var(--rect-rows, 1), 1fr);
+      background: #ffffff;
+      position: relative;
+    }
+
+    .rect-cell {
+      padding: 7px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Subtle dashed seams showing how 2-seater desks join into 4- or 6-seater rectangles */
+    .desk-rect-grid.size-4 .rect-cell:nth-child(n+3) {
+      border-top: 2px dashed var(--desk-seam);
+    }
+
+    .desk-rect-grid.size-6 .rect-cell:nth-child(3n+2),
+    .desk-rect-grid.size-6 .rect-cell:nth-child(3n+3) {
+      border-left: 2px dashed var(--desk-seam);
+    }
+
+    /* Seat Slot */
+    .seat-box {
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      min-height: 106px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s, transform 0.12s;
+    }
+
+    .seat-box.has-student {
+      border-style: solid;
+      border-color: #cbd5e1;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    .seat-box.has-student:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.14);
+    }
+
+    .seat-box.selected {
+      border: 2px solid var(--primary);
+      background: var(--primary-tint);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+
+    .seat-box.drag-hover {
+      border: 2px solid var(--primary);
+      background: #dbeafe;
+      transform: scale(1.02);
+    }
+
+    .seat-idx {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .seat-empty-txt {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .seat-student {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      pointer-events: none;
+    }
+
+    .seat-photo {
+      width: 50px;
+      height: 54px;
+      border-radius: 7px;
+      object-fit: cover;
+      border: 1.5px solid #e2e8f0;
+      background: #f1f5f9;
+    }
+
+    .seat-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .seat-form {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Toasts */
+    .toast-stack {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast-msg {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 9px 15px;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-md);
+    }
+
+    .toast-msg.success {
+      background: #065f46;
+      border-left: 4px solid #34d399;
+    }
+
+    .toast-msg.error {
+      background: #991b1b;
+      border-left: 4px solid #f87171;
+    }
+
+    /* Print */
+    @media print {
+      body { background: #ffffff; }
+      .topbar, .controls-bar, .sidebar, .hint-pill, .toast-stack { display: none !important; }
+      .main-grid { display: block; padding: 0; }
+      .classroom-card { border: none; box-shadow: none; padding: 0; }
+      .desk-pod { break-inside: avoid; box-shadow: none; }
+      .desks-row-grid { grid-template-columns: repeat(var(--cols, 4), 1fr); gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="runtimeErrorBanner"></div>
+
+  <!-- Top Header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">SP</div>
+      <div>
+        <div class="brand-title">Classroom Seating Plan Generator</div>
+        <div class="brand-sub" id="statusSubtitle">Import PhotoShot Excel (.xlsx) with photos or arrange the random demo class</div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button type="button" class="btn" id="btnRandomDemo" title="Generate a brand new random demo class">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Random Demo Class
+      </button>
+
+      <label class="btn" for="xlsxInput" title="Import PhotoShot Excel (.xlsx) file">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Import Excel (.xlsx)
+      </label>
+      <input type="file" id="xlsxInput" accept=".xlsx" style="display:none" />
+
+      <button type="button" class="btn btn-primary" id="btnShuffle">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 3 21 3 21 8"></polyline>
+          <line x1="4" y1="20" x2="21" y2="3"></line>
+          <polyline points="21 16 21 21 16 21"></polyline>
+          <line x1="15" y1="15" x2="21" y2="21"></line>
+          <line x1="4" y1="4" x2="9" y2="9"></line>
+        </svg>
+        Shuffle / Generate Plan
+      </button>
+
+      <button type="button" class="btn" id="btnClearSeats" title="Unseat all students">
+        Clear Seats
+      </button>
+
+      <button type="button" class="btn btn-success" id="btnExport">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export Excel (.xlsx)
+      </button>
+
+      <button type="button" class="btn" id="btnPrint" title="Print Seating Plan">
+        Print
+      </button>
+    </div>
+  </header>
+
+  <!-- Layout Controls Bar -->
+  <section class="controls-bar" aria-label="Desk layout controls">
+    <div class="ctrl-box">
+      <span class="ctrl-label">Desk Type:</span>
+      <div class="seg-group" id="deskTypeGroup">
+        <button type="button" class="seg-btn active" data-size="2">2-Seater</button>
+        <button type="button" class="seg-btn" data-size="4" title="Rectangular 2x2 pod (2 seats per edge)">4-Seater Rect</button>
+        <button type="button" class="seg-btn" data-size="6" title="Rectangular 3x2 pod (2 seats on each side edge)">6-Seater Rect</button>
+      </div>
+    </div>
+
+    <div class="ctrl-box">
+      <span class="ctrl-label">Rows:</span>
+      <div class="stepper">
+        <button type="button" class="step-btn" id="rowsDec" aria-label="Decrease rows">-</button>
+        <span class="step-val" id="rowsVal">3</span>
+        <button type="button" class="step-btn" id="rowsInc" aria-label="Increase rows">+</button>
+      </div>
+    </div>
+
+    <div class="ctrl-box">
+      <span class="ctrl-label">Desks / Row:</span>
+      <div class="stepper">
+        <button type="button" class="step-btn" id="desksDec" aria-label="Decrease desks per row">-</button>
+        <span class="step-val" id="desksVal">4</span>
+        <button type="button" class="step-btn" id="desksInc" aria-label="Increase desks per row">+</button>
+      </div>
+    </div>
+
+    <div class="ctrl-box">
+      <span class="ctrl-label">Fill:</span>
+      <select id="fillMode" class="ctrl-select">
+        <option value="front">Front Rows First</option>
+        <option value="spread">Spread Across Desks</option>
+      </select>
+    </div>
+
+    <div class="ctrl-box">
+      <span class="ctrl-label">View:</span>
+      <select id="orientationMode" class="ctrl-select">
+        <option value="top">Classroom View (Board Top)</option>
+        <option value="bottom">Teacher View (Board Bottom)</option>
+      </select>
+    </div>
+
+    <div class="capacity-pill" id="capacityPill">
+      3 rows x 4 desks x 2 seats = <strong>24 seats</strong>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="main-grid">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="side-block">
+        <div class="upload-box" id="dropZone">
+          <div class="upload-box-title">Drop PhotoShot .xlsx here</div>
+          <div class="upload-box-desc">Extracts embedded student photos, names &amp; form groups</div>
+        </div>
+      </div>
+
+      <div class="side-block">
+        <div class="side-heading">
+          <span>Unseated Pool</span>
+          <span class="badge-count" id="unseatedBadge">0</span>
+        </div>
+        <div class="unseated-box" id="unseatedPool">
+          <div class="pool-placeholder">All present students are seated. Drag a student here to unseat.</div>
+        </div>
+      </div>
+
+      <div class="side-block" style="border-bottom:none; padding-bottom:6px;">
+        <div class="side-heading">
+          <span>Class Roster</span>
+          <span class="badge-count" id="rosterBadge">0</span>
+        </div>
+        <div class="roster-tools">
+          <input type="text" id="rosterFilter" class="ctrl-input" placeholder="Filter students..." />
+          <form class="add-form" id="addStudentForm">
+            <input type="text" id="addNameInput" class="ctrl-input" placeholder="Full name..." required />
+            <input type="text" id="addFormInput" class="ctrl-input" placeholder="Form" style="max-width:60px;" />
+            <button type="submit" class="btn btn-sm btn-primary" title="Add Student">+</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="roster-list" id="rosterList"></div>
+    </aside>
+
+    <!-- Classroom Canvas -->
+    <section class="classroom-card">
+      <div class="classroom-header">
+        <input type="text" id="planTitleInput" class="title-edit" value="Year 7 Classroom Seating Plan" aria-label="Seating plan title" />
+        <div class="hint-pill">
+          <strong>Drag &amp; drop</strong> any student to move/swap, or <strong>click two seats</strong> to swap.
+        </div>
+      </div>
+
+      <div id="classroomCanvas"></div>
+    </section>
+  </main>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script>
+    // Global error safety net
+    window.onerror = function (msg, url, line) {
+      var banner = document.getElementById('runtimeErrorBanner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.textContent = 'Application Error: ' + msg + ' (Line ' + line + ')';
+      }
+      return false;
+    };
+
+    (function () {
+      'use strict';
+
+      /* ======================================================================
+         1. NATIVE ZIP ARCHIVE READER & WRITER (PURE JS, ZERO DEPENDENCIES)
+      ====================================================================== */
+      var crcTable = new Uint32Array(256);
+      for (var i = 0; i < 256; i++) {
+        var c = i;
+        for (var k = 0; k < 8; k++) {
+          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        crcTable[i] = c >>> 0;
+      }
+
+      function computeCrc32(bytes) {
+        var crc = 0xFFFFFFFF;
+        for (var i = 0; i < bytes.length; i++) {
+          crc = crcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+      }
+
+      async function inflateRawBytes(compressed) {
+        if (typeof DecompressionStream === 'undefined') {
+          throw new Error('Browser does not support DecompressionStream.');
+        }
+        var ds = new DecompressionStream('deflate-raw');
+        var writer = ds.writable.getWriter();
+        writer.write(compressed);
+        writer.close();
+        var buf = await new Response(ds.readable).arrayBuffer();
+        return new Uint8Array(buf);
+      }
+
+      async function deflateRawBytes(raw) {
+        if (typeof CompressionStream === 'undefined') {
+          return null;
+        }
+        try {
+          var cs = new CompressionStream('deflate-raw');
+          var writer = cs.writable.getWriter();
+          writer.write(raw);
+          writer.close();
+          var buf = await new Response(cs.readable).arrayBuffer();
+          return new Uint8Array(buf);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function readZipArchive(arrayBuffer) {
+        var view = new DataView(arrayBuffer);
+        var bytes = new Uint8Array(arrayBuffer);
+        var decoder = new TextDecoder('utf-8');
+
+        var eocdOffset = -1;
+        var minSearch = Math.max(0, bytes.length - 65560);
+        for (var i = bytes.length - 22; i >= minSearch; i--) {
+          if (view.getUint32(i, true) === 0x06054b50) {
+            eocdOffset = i;
+            break;
+          }
+        }
+        if (eocdOffset === -1) {
+          throw new Error('Invalid .xlsx file: ZIP directory not found.');
+        }
+
+        var entryCount = view.getUint16(eocdOffset + 10, true);
+        var cdOffset = view.getUint32(eocdOffset + 16, true);
+        var files = {};
+        var ptr = cdOffset;
+
+        for (var idx = 0; idx < entryCount; idx++) {
+          if (ptr + 46 > bytes.length || view.getUint32(ptr, true) !== 0x02014b50) {
+            break;
+          }
+          var method = view.getUint16(ptr + 10, true);
+          var compSize = view.getUint32(ptr + 20, true);
+          var nameLen = view.getUint16(ptr + 28, true);
+          var extraLen = view.getUint16(ptr + 30, true);
+          var commentLen = view.getUint16(ptr + 32, true);
+          var localOffset = view.getUint32(ptr + 42, true);
+
+          var fileName = decoder.decode(bytes.slice(ptr + 46, ptr + 46 + nameLen));
+          ptr += 46 + nameLen + extraLen + commentLen;
+
+          if (localOffset + 30 > bytes.length || view.getUint32(localOffset, true) !== 0x04034b50) {
+            continue;
+          }
+          var locNameLen = view.getUint16(localOffset + 26, true);
+          var locExtraLen = view.getUint16(localOffset + 28, true);
+          var dataStart = localOffset + 30 + locNameLen + locExtraLen;
+          var slice = bytes.slice(dataStart, dataStart + compSize);
+
+          if (!fileName.endsWith('/')) {
+            if (method === 0) {
+              files[fileName] = slice;
+            } else if (method === 8) {
+              files[fileName] = await inflateRawBytes(slice);
+            }
+          }
+        }
+        return files;
+      }
+
+      async function writeZipArchive(entries) {
+        var encoder = new TextEncoder();
+        var records = [];
+        var offset = 0;
+
+        for (var i = 0; i < entries.length; i++) {
+          var entry = entries[i];
+          var nameBytes = encoder.encode(entry.name);
+          var rawData = typeof entry.data === 'string' ? encoder.encode(entry.data) : entry.data;
+          var crc = computeCrc32(rawData);
+
+          var method = 0;
+          var payload = rawData;
+          var isMedia = /\.(jpe?g|png|gif)$/i.test(entry.name);
+          if (!isMedia && rawData.length > 64) {
+            var compressed = await deflateRawBytes(rawData);
+            if (compressed && compressed.length < rawData.length) {
+              method = 8;
+              payload = compressed;
+            }
+          }
+
+          var lh = new Uint8Array(30 + nameBytes.length);
+          var lhv = new DataView(lh.buffer);
+          lhv.setUint32(0, 0x04034b50, true);
+          lhv.setUint16(4, 20, true);
+          lhv.setUint16(6, 0x0800, true);
+          lhv.setUint16(8, method, true);
+          lhv.setUint16(10, 0, true);
+          lhv.setUint16(12, 0x0021, true);
+          lhv.setUint32(14, crc, true);
+          lhv.setUint32(18, payload.length, true);
+          lhv.setUint32(22, rawData.length, true);
+          lhv.setUint16(26, nameBytes.length, true);
+          lhv.setUint16(28, 0, true);
+          lh.set(nameBytes, 30);
+
+          records.push({
+            nameBytes: nameBytes,
+            method: method,
+            crc: crc,
+            compSize: payload.length,
+            uncompSize: rawData.length,
+            localOffset: offset,
+            lh: lh,
+            payload: payload
+          });
+          offset += lh.length + payload.length;
+        }
+
+        var cdParts = [];
+        var cdSize = 0;
+        for (var j = 0; j < records.length; j++) {
+          var rec = records[j];
+          var cd = new Uint8Array(46 + rec.nameBytes.length);
+          var cdv = new DataView(cd.buffer);
+          cdv.setUint32(0, 0x02014b50, true);
+          cdv.setUint16(4, 20, true);
+          cdv.setUint16(6, 20, true);
+          cdv.setUint16(8, 0x0800, true);
+          cdv.setUint16(10, rec.method, true);
+          cdv.setUint16(12, 0, true);
+          cdv.setUint16(14, 0x0021, true);
+          cdv.setUint32(16, rec.crc, true);
+          cdv.setUint32(20, rec.compSize, true);
+          cdv.setUint32(24, rec.uncompSize, true);
+          cdv.setUint16(28, rec.nameBytes.length, true);
+          cdv.setUint16(30, 0, true);
+          cdv.setUint16(32, 0, true);
+          cdv.setUint16(34, 0, true);
+          cdv.setUint16(36, 0, true);
+          cdv.setUint32(38, 0, true);
+          cdv.setUint32(42, rec.localOffset, true);
+          cd.set(rec.nameBytes, 46);
+          cdParts.push(cd);
+          cdSize += cd.length;
+        }
+
+        var eocd = new Uint8Array(22);
+        var eocdv = new DataView(eocd.buffer);
+        eocdv.setUint32(0, 0x06054b50, true);
+        eocdv.setUint16(4, 0, true);
+        eocdv.setUint16(6, 0, true);
+        eocdv.setUint16(8, records.length, true);
+        eocdv.setUint16(10, records.length, true);
+        eocdv.setUint32(12, cdSize, true);
+        eocdv.setUint32(16, offset, true);
+        eocdv.setUint16(20, 0, true);
+
+        var parts = [];
+        for (var m = 0; m < records.length; m++) {
+          parts.push(records[m].lh, records[m].payload);
+        }
+        for (var n = 0; n < cdParts.length; n++) {
+          parts.push(cdParts[n]);
+        }
+        parts.push(eocd);
+
+        return new Blob(parts, {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+      }
+
+      /* ======================================================================
+         2. EXCEL (.XLSX) IMPORTER (PHOTOS + NAMES + FORMS)
+      ====================================================================== */
+      function colLettersToZeroIdx(letters) {
+        var col = 0;
+        for (var i = 0; i < letters.length; i++) {
+          col = col * 26 + (letters.charCodeAt(i) - 64);
+        }
+        return col - 1;
+      }
+
+      function bytesToDataUri(bytes, path) {
+        var ext = path.split('.').pop().toLowerCase();
+        var mime = ext === 'png' ? 'image/png' : (ext === 'gif' ? 'image/gif' : 'image/jpeg');
+        var bin = '';
+        var step = 0x8000;
+        for (var i = 0; i < bytes.length; i += step) {
+          var chunk = bytes.subarray(i, Math.min(i + step, bytes.length));
+          bin += String.fromCharCode.apply(null, chunk);
+        }
+        return 'data:' + mime + ';base64,' + btoa(bin);
+      }
+
+      function parseXmlBytes(bytes) {
+        var text = new TextDecoder('utf-8').decode(bytes);
+        return new DOMParser().parseFromString(text, 'application/xml');
+      }
+
+      function resolvePath(baseDir, relTarget) {
+        if (relTarget.charAt(0) === '/') return relTarget.slice(1);
+        var parts = (baseDir ? baseDir.split('/') : []).concat(relTarget.split('/'));
+        var out = [];
+        for (var i = 0; i < parts.length; i++) {
+          var p = parts[i];
+          if (!p || p === '.') continue;
+          if (p === '..') out.pop();
+          else out.push(p);
+        }
+        return out.join('/');
+      }
+
+      async function importXlsxBuffer(buffer) {
+        var files = await readZipArchive(buffer);
+
+        var sharedStrings = [];
+        if (files['xl/sharedStrings.xml']) {
+          var ssDoc = parseXmlBytes(files['xl/sharedStrings.xml']);
+          var siList = ssDoc.getElementsByTagName('si');
+          for (var i = 0; i < siList.length; i++) {
+            var tList = siList[i].getElementsByTagName('t');
+            var str = '';
+            for (var j = 0; j < tList.length; j++) {
+              str += tList[j].textContent || '';
+            }
+            sharedStrings.push(str.trim());
+          }
+        }
+
+        var sheetPath = 'xl/worksheets/sheet1.xml';
+        if (!files[sheetPath]) {
+          var keys = Object.keys(files);
+          for (var k = 0; k < keys.length; k++) {
+            if (/^xl\/worksheets\/sheet\d+\.xml$/.test(keys[k])) {
+              sheetPath = keys[k];
+              break;
+            }
+          }
+        }
+        if (!files[sheetPath]) {
+          throw new Error('No worksheet found in Excel file.');
+        }
+
+        var sheetDoc = parseXmlBytes(files[sheetPath]);
+        var cellGrid = {};
+        var cNodes = sheetDoc.getElementsByTagName('c');
+        for (var cIdx = 0; cIdx < cNodes.length; cIdx++) {
+          var cell = cNodes[cIdx];
+          var ref = cell.getAttribute('r');
+          if (!ref) continue;
+          var match = ref.match(/^([A-Z]+)(\d+)$/);
+          if (!match) continue;
+
+          var col0 = colLettersToZeroIdx(match[1]);
+          var row0 = parseInt(match[2], 10) - 1;
+          var cType = cell.getAttribute('t');
+          var val = '';
+
+          if (cType === 'inlineStr') {
+            var it = cell.getElementsByTagName('t');
+            for (var x = 0; x < it.length; x++) val += it[x].textContent || '';
+          } else {
+            var vNode = cell.getElementsByTagName('v')[0];
+            if (vNode) {
+              var raw = vNode.textContent || '';
+              val = cType === 's' ? (sharedStrings[parseInt(raw, 10)] || '') : raw;
+            }
+          }
+
+          val = val.trim();
+          if (val !== '') {
+            if (!cellGrid[row0]) cellGrid[row0] = {};
+            cellGrid[row0][col0] = val;
+          }
+        }
+
+        var sheetFile = sheetPath.split('/').pop();
+        var sheetRelsPath = 'xl/worksheets/_rels/' + sheetFile + '.rels';
+        var drawingPath = 'xl/drawings/drawing1.xml';
+
+        if (files[sheetRelsPath]) {
+          var sRelsDoc = parseXmlBytes(files[sheetRelsPath]);
+          var sRels = sRelsDoc.getElementsByTagName('Relationship');
+          for (var r = 0; r < sRels.length; r++) {
+            if ((sRels[r].getAttribute('Type') || '').indexOf('/drawing') !== -1) {
+              drawingPath = resolvePath('xl/worksheets', sRels[r].getAttribute('Target'));
+              break;
+            }
+          }
+        }
+
+        var importedStudents = [];
+
+        if (files[drawingPath]) {
+          var drawFile = drawingPath.split('/').pop();
+          var drawDir = drawingPath.substring(0, drawingPath.lastIndexOf('/'));
+          var drawRelsPath = drawDir + '/_rels/' + drawFile + '.rels';
+
+          var relMap = {};
+          if (files[drawRelsPath]) {
+            var dRelsDoc = parseXmlBytes(files[drawRelsPath]);
+            var dRels = dRelsDoc.getElementsByTagName('Relationship');
+            for (var dr = 0; dr < dRels.length; dr++) {
+              relMap[dRels[dr].getAttribute('Id')] = resolvePath(drawDir, dRels[dr].getAttribute('Target'));
+            }
+          }
+
+          var drawDoc = parseXmlBytes(files[drawingPath]);
+          var anchors = [];
+          var tags = ['xdr:oneCellAnchor', 'xdr:twoCellAnchor', 'oneCellAnchor', 'twoCellAnchor'];
+          for (var tIdx = 0; tIdx < tags.length; tIdx++) {
+            var found = drawDoc.getElementsByTagName(tags[tIdx]);
+            for (var f = 0; f < found.length; f++) {
+              anchors.push(found[f]);
+            }
+            if (anchors.length > 0 && tIdx === 1) break;
+          }
+
+          var items = [];
+          for (var aIdx = 0; aIdx < anchors.length; aIdx++) {
+            var anc = anchors[aIdx];
+            var fromEl = anc.getElementsByTagName('xdr:from')[0] || anc.getElementsByTagName('from')[0];
+            var blipEl = anc.getElementsByTagName('a:blip')[0] || anc.getElementsByTagName('blip')[0];
+            if (!fromEl || !blipEl) continue;
+
+            var colEl = fromEl.getElementsByTagName('xdr:col')[0] || fromEl.getElementsByTagName('col')[0];
+            var rowEl = fromEl.getElementsByTagName('xdr:row')[0] || fromEl.getElementsByTagName('row')[0];
+            var embedId = blipEl.getAttribute('r:embed') || blipEl.getAttribute('embed');
+            if (!colEl || !rowEl || !embedId) continue;
+
+            var aCol = parseInt(colEl.textContent, 10);
+            var aRow = parseInt(rowEl.textContent, 10);
+            var mediaFile = relMap[embedId];
+            var photoUri = (mediaFile && files[mediaFile]) ? bytesToDataUri(files[mediaFile], mediaFile) : null;
+
+            items.push({ col0: aCol, row0: aRow, photo: photoUri });
+          }
+
+          items.sort(function (a, b) {
+            return (a.row0 - b.row0) || (a.col0 - b.col0);
+          });
+
+          for (var sIdx = 0; sIdx < items.length; sIdx++) {
+            var item = items[sIdx];
+            var textsBelow = [];
+            for (var scanR = item.row0 + 1; scanR <= item.row0 + 6; scanR++) {
+              if (cellGrid[scanR] && cellGrid[scanR][item.col0]) {
+                textsBelow.push(cellGrid[scanR][item.col0]);
+              }
+            }
+
+            var stuForm = '';
+            var stuName = '';
+            if (textsBelow.length >= 2) {
+              stuForm = textsBelow[0];
+              stuName = textsBelow[1];
+            } else if (textsBelow.length === 1) {
+              var singleText = textsBelow[0];
+              var parensMatch = singleText.match(/^(.+?)\s*\(([^)]+)\)$/);
+              if (parensMatch && singleText.indexOf(',') === -1) {
+                stuName = parensMatch[1].trim();
+                stuForm = parensMatch[2].trim();
+              } else {
+                stuName = singleText;
+              }
+            } else {
+              stuName = 'Student ' + (sIdx + 1);
+            }
+
+            importedStudents.push({
+              id: 'imp_' + Date.now() + '_' + sIdx,
+              name: stuName,
+              group: stuForm,
+              photo: item.photo,
+              present: true
+            });
+          }
+        }
+
+        // Fallback for plain tabular spreadsheets without embedded photos
+        if (importedStudents.length === 0) {
+          var fallbackSheet = files['xl/worksheets/sheet2.xml'] ? 'xl/worksheets/sheet2.xml' : sheetPath;
+          var fbDoc = parseXmlBytes(files[fallbackSheet]);
+          var fbRows = fbDoc.getElementsByTagName('row');
+          for (var rIdx = 0; rIdx < fbRows.length; rIdx++) {
+            var rowCells = fbRows[rIdx].getElementsByTagName('c');
+            var vals = [];
+            for (var rc = 0; rc < rowCells.length; rc++) {
+              var typeAttr = rowCells[rc].getAttribute('t');
+              var vEl = rowCells[rc].getElementsByTagName('v')[0];
+              if (vEl) {
+                var rawText = vEl.textContent || '';
+                vals.push(typeAttr === 's' ? (sharedStrings[parseInt(rawText, 10)] || '') : rawText);
+              }
+            }
+            if (vals.length >= 1 && vals[0] && !/^(row|student|name|#)$/i.test(vals[0].trim())) {
+              if (vals.length >= 5 && /^\d+$/.test(vals[0].trim())) {
+                importedStudents.push({
+                  id: 'imp_' + Date.now() + '_' + rIdx,
+                  name: vals[4].trim(),
+                  group: (vals[5] || '').trim(),
+                  photo: null,
+                  present: true
+                });
+              } else {
+                importedStudents.push({
+                  id: 'imp_' + Date.now() + '_' + rIdx,
+                  name: vals[0].trim(),
+                  group: (vals[1] || '').trim(),
+                  photo: null,
+                  present: true
+                });
+              }
+            }
+          }
+        }
+
+        return importedStudents;
+      }
+
+      /* ======================================================================
+         3. EXCEL (.XLSX) EXPORTER WITH RECTANGULAR DESK LAYOUTS & PHOTOS
+      ====================================================================== */
+      function escapeXml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      }
+
+      function zeroIdxToColLetters(idx0) {
+        var n = idx0 + 1;
+        var out = '';
+        while (n > 0) {
+          var rem = (n - 1) % 26;
+          out = String.fromCharCode(65 + rem) + out;
+          n = Math.floor((n - 1) / 26);
+        }
+        return out;
+      }
+
+      function dataUriToBytes(uri) {
+        var splitIdx = uri.indexOf(',');
+        var header = uri.substring(0, splitIdx);
+        var b64 = uri.substring(splitIdx + 1);
+        var isPng = header.indexOf('image/png') !== -1;
+        var bin = atob(b64);
+        var arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) {
+          arr[i] = bin.charCodeAt(i);
+        }
+        return { bytes: arr, ext: isPng ? 'png' : 'jpeg' };
+      }
+
+      function convertToRasterImage(uri) {
+        if (!uri) return Promise.resolve(null);
+        if (uri.indexOf('data:image/jpeg') === 0 || uri.indexOf('data:image/jpg') === 0 || uri.indexOf('data:image/png') === 0) {
+          return Promise.resolve(dataUriToBytes(uri));
+        }
+        if (uri.indexOf('data:image/svg+xml') === 0) {
+          return new Promise(function (resolve) {
+            var img = new Image();
+            img.onload = function () {
+              var canvas = document.createElement('canvas');
+              canvas.width = 120;
+              canvas.height = 130;
+              var ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, 120, 130);
+              resolve(dataUriToBytes(canvas.toDataURL('image/png')));
+            };
+            img.onerror = function () {
+              resolve(null);
+            };
+            img.src = uri;
+          });
+        }
+        return Promise.resolve(null);
+      }
+
+      async function exportXlsxWorkbook(appState, studentLookup) {
+        var rows = appState.rows;
+        var desksPerRow = appState.desksPerRow;
+        var deskSize = appState.deskSize;
+        var seats = appState.seats;
+        var planTitle = appState.planTitle;
+        var orientation = appState.orientation;
+
+        // Rectangular geometry matching UI:
+        // 2-seater: 2 cols x 1 row
+        // 4-seater: 2 cols x 2 rows (2 seats on top edge, 2 seats on bottom edge)
+        // 6-seater: 3 cols x 2 rows (2 seats on left edge, 2 in middle, 2 on right edge)
+        var rectCols = deskSize === 6 ? 3 : 2;
+        var rectRows = deskSize === 2 ? 1 : 2;
+        var totalSheetCols = desksPerRow * rectCols + (desksPerRow - 1);
+
+        var mediaList = [];
+        var anchors = [];
+        var hasPng = false;
+        var hasJpeg = false;
+
+        var sheet1Rows = [];
+        var merges = [];
+
+        // Title Row
+        sheet1Rows.push({
+          r1: 1,
+          ht: 28,
+          cells: [{ c0: 0, val: planTitle + ' (' + deskSize + '-Seater Desks)', style: 1 }]
+        });
+        if (totalSheetCols > 1) {
+          merges.push('A1:' + zeroIdxToColLetters(totalSheetCols - 1) + '1');
+        }
+
+        var curRow0 = 2;
+
+        function pushBoardBanner() {
+          var r1 = curRow0 + 1;
+          sheet1Rows.push({
+            r1: r1,
+            ht: 22,
+            cells: [{ c0: 0, val: "WHITEBOARD / FRONT OF CLASSROOM", style: 2 }]
+          });
+          if (totalSheetCols > 1) {
+            merges.push('A' + r1 + ':' + zeroIdxToColLetters(totalSheetCols - 1) + r1);
+          }
+          curRow0 += 2;
+        }
+
+        if (orientation === 'top') {
+          pushBoardBanner();
+        }
+
+        var rowIndices = [];
+        for (var r = 0; r < rows; r++) rowIndices.push(r);
+        if (orientation === 'bottom') rowIndices.reverse();
+
+        for (var ri = 0; ri < rowIndices.length; ri++) {
+          var rIdx = rowIndices[ri];
+
+          // Row Label
+          var rowBannerR1 = curRow0 + 1;
+          sheet1Rows.push({
+            r1: rowBannerR1,
+            ht: 20,
+            cells: [{ c0: 0, val: 'ROW ' + (rIdx + 1), style: 3 }]
+          });
+          if (totalSheetCols > 1) {
+            merges.push('A' + rowBannerR1 + ':' + zeroIdxToColLetters(totalSheetCols - 1) + rowBannerR1);
+          }
+          curRow0++;
+
+          // Desk Headers
+          var deskHeaderR1 = curRow0 + 1;
+          var dhCells = [];
+          for (var dIdx = 0; dIdx < desksPerRow; dIdx++) {
+            var startC = dIdx * (rectCols + 1);
+            var endC = startC + rectCols - 1;
+            var deskNum = rIdx * desksPerRow + dIdx + 1;
+            var dLabel = deskSize === 2
+              ? 'Desk ' + deskNum + ' (2-Seater)'
+              : 'Desk ' + deskNum + ' (' + deskSize + '-Seater Rect)';
+            dhCells.push({ c0: startC, val: dLabel, style: 4 });
+            for (var mc = startC + 1; mc <= endC; mc++) {
+              dhCells.push({ c0: mc, val: '', style: 4 });
+            }
+            if (endC > startC) {
+              merges.push(zeroIdxToColLetters(startC) + deskHeaderR1 + ':' + zeroIdxToColLetters(endC) + deskHeaderR1);
+            }
+          }
+          sheet1Rows.push({ r1: deskHeaderR1, ht: 20, cells: dhCells });
+          curRow0++;
+
+          // Sub-rows inside rectangular desk (1 sub-row for 2-seater, 2 sub-rows for 4- & 6-seater)
+          for (var subR = 0; subR < rectRows; subR++) {
+            var photoRow0 = curRow0;
+            var photoR1 = photoRow0 + 1;
+            var nameR1 = photoR1 + 1;
+            var pCells = [];
+            var nCells = [];
+
+            for (var d = 0; d < desksPerRow; d++) {
+              var baseC = d * (rectCols + 1);
+              for (var subC = 0; subC < rectCols; subC++) {
+                var c0 = baseC + subC;
+                var localSeatOffset = subR * rectCols + subC;
+                var seatIdx = (rIdx * desksPerRow * deskSize) + (d * deskSize) + localSeatOffset;
+                var stuId = seats[seatIdx];
+                var stu = stuId ? studentLookup.get(stuId) : null;
+
+                pCells.push({ c0: c0, val: '', style: 5 });
+
+                if (stu) {
+                  var label = stu.group ? (stu.name + ' (' + stu.group + ')') : stu.name;
+                  nCells.push({ c0: c0, val: label, style: 6 });
+
+                  if (stu.photo) {
+                    var raster = await convertToRasterImage(stu.photo);
+                    if (raster) {
+                      var imgNum = mediaList.length + 1;
+                      var imgName = 'image' + imgNum + '.' + raster.ext;
+                      mediaList.push({ name: imgName, bytes: raster.bytes });
+                      if (raster.ext === 'png') hasPng = true;
+                      else hasJpeg = true;
+
+                      anchors.push({
+                        col0: c0,
+                        row0: photoRow0,
+                        rId: 'rId' + imgNum
+                      });
+                    }
+                  }
+                } else {
+                  nCells.push({ c0: c0, val: '[Empty]', style: 7 });
+                }
+              }
+            }
+
+            sheet1Rows.push({ r1: photoR1, ht: 72, cells: pCells });
+            sheet1Rows.push({ r1: nameR1, ht: 28, cells: nCells });
+            curRow0 += 2;
+          }
+
+          curRow0 += 1; // Blank spacer row between classroom rows
+        }
+
+        if (orientation === 'bottom') {
+          pushBoardBanner();
+        }
+
+        // Sheet 2: Tabular Seat List
+        var sheet2Rows = [{
+          r1: 1,
+          ht: 22,
+          cells: [
+            { c0: 0, val: 'Row', style: 4 },
+            { c0: 1, val: 'Desk', style: 4 },
+            { c0: 2, val: 'Seat #', style: 4 },
+            { c0: 3, val: 'Student Name', style: 4 },
+            { c0: 4, val: 'Form / Group', style: 4 }
+          ]
+        }];
+
+        var s2r = 2;
+        for (var r2 = 0; r2 < rows; r2++) {
+          for (var d2 = 0; d2 < desksPerRow; d2++) {
+            var dNum = r2 * desksPerRow + d2 + 1;
+            for (var s2 = 0; s2 < deskSize; s2++) {
+              var idx = (r2 * desksPerRow * deskSize) + (d2 * deskSize) + s2;
+              var sid = seats[idx];
+              var st = sid ? studentLookup.get(sid) : null;
+              sheet2Rows.push({
+                r1: s2r++,
+                ht: 19,
+                cells: [
+                  { c0: 0, val: 'Row ' + (r2 + 1), style: 0 },
+                  { c0: 1, val: 'Desk ' + dNum, style: 0 },
+                  { c0: 2, val: String(idx + 1), style: 0 },
+                  { c0: 3, val: st ? st.name : '(Empty)', style: 0 },
+                  { c0: 4, val: st ? st.group : '', style: 0 }
+                ]
+              });
+            }
+          }
+        }
+
+        var colsXml = '<cols>';
+        for (var colI = 0; colI < totalSheetCols; colI++) {
+          var isGap = ((colI + 1) % (rectCols + 1)) === 0;
+          colsXml += '<col min="' + (colI + 1) + '" max="' + (colI + 1) + '" width="' + (isGap ? 3.5 : 18) + '" customWidth="1"/>';
+        }
+        colsXml += '</cols>';
+
+        function renderRowsXml(rowArr) {
+          return rowArr.map(function (rObj) {
+            var cellsStr = rObj.cells.map(function (cObj) {
+              var ref = zeroIdxToColLetters(cObj.c0) + rObj.r1;
+              return '<c r="' + ref + '" s="' + cObj.style + '" t="inlineStr"><is><t>' + escapeXml(cObj.val) + '</t></is></c>';
+            }).join('');
+            return '<row r="' + rObj.r1 + '" ht="' + rObj.ht + '" customHeight="1">' + cellsStr + '</row>';
+          }).join('');
+        }
+
+        var mergesXml = merges.length > 0
+          ? '<mergeCells count="' + merges.length + '">' + merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('') + '</mergeCells>'
+          : '';
+
+        var sheet1Xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+          '<sheetViews><sheetView workbookViewId="0"/></sheetViews>' +
+          '<sheetFormatPr defaultRowHeight="18"/>' +
+          colsXml +
+          '<sheetData>' + renderRowsXml(sheet1Rows) + '</sheetData>' +
+          mergesXml +
+          (anchors.length > 0 ? '<drawing r:id="rId1"/>' : '') +
+          '</worksheet>';
+
+        var sheet2Xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+          '<sheetViews><sheetView workbookViewId="0"/></sheetViews>' +
+          '<cols>' +
+          '<col min="1" max="1" width="12" customWidth="1"/>' +
+          '<col min="2" max="2" width="12" customWidth="1"/>' +
+          '<col min="3" max="3" width="10" customWidth="1"/>' +
+          '<col min="4" max="4" width="28" customWidth="1"/>' +
+          '<col min="5" max="5" width="16" customWidth="1"/>' +
+          '</cols>' +
+          '<sheetData>' + renderRowsXml(sheet2Rows) + '</sheetData>' +
+          '</worksheet>';
+
+        var stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+          '<fonts count="6">' +
+          '<font><sz val="10"/><name val="Calibri"/></font>' +
+          '<font><b/><sz val="14"/><color rgb="FF0F172A"/><name val="Calibri"/></font>' +
+          '<font><b/><sz val="10"/><color rgb="FF334155"/><name val="Calibri"/></font>' +
+          '<font><b/><sz val="10"/><color rgb="FF475569"/><name val="Calibri"/></font>' +
+          '<font><b/><sz val="10"/><color rgb="FF92400E"/><name val="Calibri"/></font>' +
+          '<font><i/><sz val="9"/><color rgb="FF94A3B8"/><name val="Calibri"/></font>' +
+          '</fonts>' +
+          '<fills count="6">' +
+          '<fill><patternFill patternType="none"/></fill>' +
+          '<fill><patternFill patternType="gray125"/></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>' +
+          '</fills>' +
+          '<borders count="3">' +
+          '<border><left/><right/><top/><bottom/><diagonal/></border>' +
+          '<border><left style="thin"><color rgb="FFD97706"/></left><right style="thin"><color rgb="FFD97706"/></right><top style="thin"><color rgb="FFD97706"/></top><bottom style="thin"><color rgb="FFD97706"/></bottom></border>' +
+          '<border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom></border>' +
+          '</borders>' +
+          '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+          '<cellXfs count="8">' +
+          '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+          '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="2" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+          '<xf numFmtId="0" fontId="5" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+          '</cellXfs>' +
+          '</styleSheet>';
+
+        var ctParts = [
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+          '<Default Extension="xml" ContentType="application/xml"/>'
+        ];
+        if (hasJpeg) ctParts.push('<Default Extension="jpeg" ContentType="image/jpeg"/>');
+        if (hasPng) ctParts.push('<Default Extension="png" ContentType="image/png"/>');
+        ctParts.push(
+          '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>',
+          '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+          '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+          '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        );
+        if (anchors.length > 0) {
+          ctParts.push('<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>');
+        }
+
+        var contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' + ctParts.join('') + '</Types>';
+
+        var rootRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+          '</Relationships>';
+
+        var workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+          '<sheets>' +
+          '<sheet name="Seating Plan" sheetId="1" r:id="rId1"/>' +
+          '<sheet name="Seat List" sheetId="2" r:id="rId2"/>' +
+          '</sheets>' +
+          '</workbook>';
+
+        var workbookRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+          '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>' +
+          '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+          '</Relationships>';
+
+        var zipFiles = [
+          { name: '[Content_Types].xml', data: contentTypesXml },
+          { name: '_rels/.rels', data: rootRelsXml },
+          { name: 'xl/workbook.xml', data: workbookXml },
+          { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+          { name: 'xl/styles.xml', data: stylesXml },
+          { name: 'xl/worksheets/sheet1.xml', data: sheet1Xml },
+          { name: 'xl/worksheets/sheet2.xml', data: sheet2Xml }
+        ];
+
+        if (anchors.length > 0) {
+          var sheet1Rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>' +
+            '</Relationships>';
+
+          var drawRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            mediaList.map(function (m, idx) {
+              return '<Relationship Id="rId' + (idx + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/' + m.name + '"/>';
+            }).join('') +
+            '</Relationships>';
+
+          var anchorNodes = anchors.map(function (a, idx) {
+            return '<xdr:oneCellAnchor>' +
+              '<xdr:from><xdr:col>' + a.col0 + '</xdr:col><xdr:colOff>180000</xdr:colOff><xdr:row>' + a.row0 + '</xdr:row><xdr:rowOff>50000</xdr:rowOff></xdr:from>' +
+              '<xdr:ext cx="660000" cy="720000"/>' +
+              '<xdr:pic>' +
+              '<xdr:nvPicPr><xdr:cNvPr id="' + (idx + 2) + '" name="Photo_' + (idx + 1) + '"/><xdr:cNvPicPr/></xdr:nvPicPr>' +
+              '<xdr:blipFill><a:blip r:embed="' + a.rId + '"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>' +
+              '<xdr:spPr><a:prstGeom prst="rect"/></xdr:spPr>' +
+              '</xdr:pic>' +
+              '<xdr:clientData/>' +
+              '</xdr:oneCellAnchor>';
+          }).join('');
+
+          var drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+            '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+            anchorNodes +
+            '</xdr:wsDr>';
+
+          zipFiles.push({ name: 'xl/worksheets/_rels/sheet1.xml.rels', data: sheet1Rels });
+          zipFiles.push({ name: 'xl/drawings/drawing1.xml', data: drawingXml });
+          zipFiles.push({ name: 'xl/drawings/_rels/drawing1.xml.rels', data: drawRels });
+          for (var mf = 0; mf < mediaList.length; mf++) {
+            zipFiles.push({ name: 'xl/media/' + mediaList[mf].name, data: mediaList[mf].bytes });
+          }
+        }
+
+        return await writeZipArchive(zipFiles);
+      }
+
+      /* ======================================================================
+         4. RANDOM DEMO CLASS GENERATOR (NO SAMPLE DATA REFERENCES)
+      ====================================================================== */
+      var FIRST_NAMES = [
+        'Maya', 'Liam', 'Chloe', 'Noah', 'Ava', 'Ethan', 'Zara', 'Lucas',
+        'Sophia', 'Mason', 'Isla', 'Caleb', 'Amara', 'Leo', 'Hannah', 'Owen',
+        'Freya', 'Daniel', 'Ruby', 'Isaac', 'Sienna', 'Theo', 'Nadia', 'Oscar',
+        'Evie', 'Julian', 'Layla', 'Samuel', 'Aria', 'Toby', 'Grace', 'Aiden'
+      ];
+
+      var LAST_NAMES = [
+        'Patel', "O'Connor", 'Bennett', 'Kim', 'Morales', 'Brooks', 'Hussain',
+        'Meyer', 'Chen', 'Wright', 'Campbell', 'Foster', 'Okafor', 'Rossi',
+        'Lindqvist', 'Davies', 'Singh', 'Kowalski', 'Reed', 'Alvarez', 'Shaw',
+        'Nguyen', 'Turner', 'Begum', 'Harper', 'Walker', 'Silva', 'Grant'
+      ];
+
+      var FORM_CODES = ['7A', '7B', '7C'];
+
+      var AVATAR_PALETTES = [
+        { bg: '#dbeafe', shirt: '#1d4ed8', hair: '#1e293b', skin: '#fde68a' },
+        { bg: '#dcfce7', shirt: '#047857', hair: '#451a03', skin: '#fcd34d' },
+        { bg: '#fef3c7', shirt: '#b45309', hair: '#0f172a', skin: '#fed7aa' },
+        { bg: '#f3e8ff', shirt: '#6d28d9', hair: '#27272a', skin: '#fde68a' },
+        { bg: '#ffe4e6', shirt: '#be123c', hair: '#78350f', skin: '#fed7aa' },
+        { bg: '#e0f2fe', shirt: '#0369a1', hair: '#1e293b', skin: '#fcd34d' },
+        { bg: '#ccfbf1', shirt: '#0f766e', hair: '#3f2e21', skin: '#fde68a' }
+      ];
+
+      function buildSafeAvatarUri(fullName, paletteIndex) {
+        var pal = AVATAR_PALETTES[paletteIndex % AVATAR_PALETTES.length];
+        var parts = fullName.replace(/[^A-Za-z\s]/g, '').trim().split(/\s+/);
+        var initials = ((parts[0] ? parts[0][0] : 'S') + (parts[1] ? parts[1][0] : '')).toUpperCase();
+
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 130">' +
+          '<rect width="120" height="130" fill="' + pal.bg + '"/>' +
+          '<circle cx="60" cy="48" r="23" fill="' + pal.skin + '"/>' +
+          '<path d="M37 44 C37 24, 83 24, 83 44 C80 32, 40 32, 37 44 Z" fill="' + pal.hair + '"/>' +
+          '<circle cx="52" cy="47" r="2.4" fill="#1e293b"/>' +
+          '<circle cx="68" cy="47" r="2.4" fill="#1e293b"/>' +
+          '<path d="M54 56 Q60 61 66 56" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+          '<path d="M22 130 C22 94, 98 94, 98 130 Z" fill="' + pal.shirt + '"/>' +
+          '<text x="60" y="118" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">' + initials + '</text>' +
+          '</svg>';
+
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+      }
+
+      function generateRandomDemoClass(count) {
+        var total = count || 18;
+        var usedNames = {};
+        var list = [];
+        var seedOffset = Math.floor(Math.random() * 100);
+
+        while (list.length < total) {
+          var fn = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+          var ln = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+          var fullName = fn + ' ' + ln;
+          if (usedNames[fullName]) continue;
+          usedNames[fullName] = true;
+
+          var form = FORM_CODES[Math.floor(Math.random() * FORM_CODES.length)];
+          list.push({
+            id: 'demo_' + Date.now() + '_' + list.length,
+            name: fullName,
+            group: form,
+            photo: buildSafeAvatarUri(fullName, list.length + seedOffset),
+            present: true
+          });
+        }
+        return list;
+      }
+
+      /* ======================================================================
+         5. APPLICATION STATE & INTERACTION LOGIC
+      ====================================================================== */
+      var state = {
+        planTitle: 'Year 7 Classroom Seating Plan',
+        students: [],
+        rows: 3,
+        desksPerRow: 4,
+        deskSize: 2, // 2 = 2-seater, 4 = 4-seater rect (2x2), 6 = 6-seater rect (3x2)
+        fillMode: 'front',
+        orientation: 'top',
+        seats: [],
+        selectedSource: null,
+        dragSource: null,
+        rosterFilter: ''
+      };
+
+      function showToast(text, kind) {
+        var stack = document.getElementById('toastStack');
+        if (!stack) return;
+        var item = document.createElement('div');
+        item.className = 'toast-msg ' + (kind || '');
+        item.textContent = text;
+        stack.appendChild(item);
+        setTimeout(function () {
+          item.style.opacity = '0';
+          item.style.transition = 'opacity 0.25s';
+          setTimeout(function () {
+            if (item.parentNode) item.parentNode.removeChild(item);
+          }, 260);
+        }, 3000);
+      }
+
+      function getTotalCapacity() {
+        return state.rows * state.desksPerRow * state.deskSize;
+      }
+
+      function buildStudentMap() {
+        var map = new Map();
+        for (var i = 0; i < state.students.length; i++) {
+          map.set(state.students[i].id, state.students[i]);
+        }
+        return map;
+      }
+
+      function syncSeatsToCapacity() {
+        var cap = getTotalCapacity();
+        var presentIds = new Set();
+        for (var i = 0; i < state.students.length; i++) {
+          if (state.students[i].present) {
+            presentIds.add(state.students[i].id);
+          }
+        }
+        var nextSeats = new Array(cap).fill(null);
+        var seen = new Set();
+        for (var s = 0; s < Math.min(state.seats.length, cap); s++) {
+          var sid = state.seats[s];
+          if (sid && presentIds.has(sid) && !seen.has(sid)) {
+            nextSeats[s] = sid;
+            seen.add(sid);
+          }
+        }
+        state.seats = nextSeats;
+      }
+
+      function shuffleAndAssignSeats() {
+        var cap = getTotalCapacity();
+        var active = state.students.filter(function (s) { return s.present; });
+        var pool = active.slice();
+
+        for (var i = pool.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = pool[i];
+          pool[i] = pool[j];
+          pool[j] = tmp;
+        }
+
+        var nextSeats = new Array(cap).fill(null);
+        var toSeat = pool.slice(0, cap);
+
+        if (state.fillMode === 'front') {
+          for (var k = 0; k < toSeat.length; k++) {
+            nextSeats[k] = toSeat[k].id;
+          }
+        } else {
+          var totalDesks = state.rows * state.desksPerRow;
+          var order = [];
+          for (var offset = 0; offset < state.deskSize; offset++) {
+            for (var d = 0; d < totalDesks; d++) {
+              order.push(d * state.deskSize + offset);
+            }
+          }
+          for (var m = 0; m < toSeat.length; m++) {
+            nextSeats[order[m]] = toSeat[m].id;
+          }
+        }
+
+        state.seats = nextSeats;
+        state.selectedSource = null;
+        renderAll();
+        showToast('Randomly seated ' + toSeat.length + ' student' + (toSeat.length === 1 ? '' : 's') + '.', 'success');
+      }
+
+      function clearAllSeats() {
+        state.seats = new Array(getTotalCapacity()).fill(null);
+        state.selectedSource = null;
+        renderAll();
+        showToast('All seats cleared.');
+      }
+
+      function executeMoveOrSwap(source, target) {
+        if (!source || !target) return;
+
+        if (source.type === 'seat' && target.type === 'seat') {
+          if (source.index === target.index) return;
+          var temp = state.seats[target.index];
+          state.seats[target.index] = state.seats[source.index];
+          state.seats[source.index] = temp;
+        } else if (source.type === 'pool' && target.type === 'seat') {
+          state.seats[target.index] = source.studentId;
+        } else if (source.type === 'seat' && target.type === 'pool') {
+          state.seats[source.index] = null;
+        }
+
+        state.selectedSource = null;
+        renderAll();
+      }
+
+      /* ======================================================================
+         6. RENDERING ENGINE
+      ====================================================================== */
+      function renderAll() {
+        syncSeatsToCapacity();
+        renderControlStats();
+        renderSidebar();
+        renderClassroom();
+      }
+
+      function renderControlStats() {
+        document.getElementById('rowsVal').textContent = state.rows;
+        document.getElementById('desksVal').textContent = state.desksPerRow;
+
+        var segBtns = document.querySelectorAll('#deskTypeGroup .seg-btn');
+        for (var i = 0; i < segBtns.length; i++) {
+          var sz = parseInt(segBtns[i].getAttribute('data-size'), 10);
+          segBtns[i].classList.toggle('active', sz === state.deskSize);
+        }
+
+        var cap = getTotalCapacity();
+        var seatedCount = state.seats.filter(Boolean).length;
+        var presentCount = state.students.filter(function (s) { return s.present; }).length;
+
+        document.getElementById('capacityPill').innerHTML =
+          state.rows + ' rows &times; ' + state.desksPerRow + ' desks &times; ' + state.deskSize +
+          ' seats = <strong>' + cap + ' seats</strong> (' + seatedCount + '/' + presentCount + ' seated)';
+      }
+
+      function renderSidebar() {
+        var seatedSet = new Set(state.seats.filter(Boolean));
+        var unseated = state.students.filter(function (s) {
+          return s.present && !seatedSet.has(s.id);
+        });
+
+        var poolContainer = document.getElementById('unseatedPool');
+        document.getElementById('unseatedBadge').textContent = unseated.length;
+
+        if (unseated.length === 0) {
+          poolContainer.innerHTML = '<div class="pool-placeholder">All present students are seated. Drag a student here to unseat.</div>';
+        } else {
+          poolContainer.innerHTML = '';
+          unseated.forEach(function (stu) {
+            var card = document.createElement('div');
+            card.className = 'pool-card';
+            if (state.selectedSource && state.selectedSource.type === 'pool' && state.selectedSource.studentId === stu.id) {
+              card.classList.add('selected');
+            }
+            card.draggable = true;
+
+            var imgSrc = stu.photo || buildSafeAvatarUri(stu.name, 0);
+            card.innerHTML =
+              '<img class="mini-avatar" src="' + imgSrc + '" alt="" />' +
+              '<span class="roster-name" style="flex:1;">' + escapeHtml(stu.name) + '</span>' +
+              (stu.group ? '<span class="form-tag">' + escapeHtml(stu.group) + '</span>' : '');
+
+            card.addEventListener('dragstart', function (e) {
+              state.dragSource = { type: 'pool', studentId: stu.id };
+              if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('click', function () {
+              if (state.selectedSource && state.selectedSource.type === 'pool' && state.selectedSource.studentId === stu.id) {
+                state.selectedSource = null;
+              } else {
+                state.selectedSource = { type: 'pool', studentId: stu.id };
+              }
+              renderAll();
+            });
+
+            poolContainer.appendChild(card);
+          });
+        }
+
+        // Roster List
+        var rosterContainer = document.getElementById('rosterList');
+        document.getElementById('rosterBadge').textContent = state.students.length;
+        rosterContainer.innerHTML = '';
+
+        var query = state.rosterFilter.toLowerCase();
+        var filtered = state.students.filter(function (s) {
+          if (!query) return true;
+          return s.name.toLowerCase().indexOf(query) !== -1 || (s.group && s.group.toLowerCase().indexOf(query) !== -1);
+        });
+
+        filtered.forEach(function (stu) {
+          var row = document.createElement('div');
+          row.className = 'roster-row' + (stu.present ? '' : ' is-absent');
+
+          var imgSrc = stu.photo || buildSafeAvatarUri(stu.name, 0);
+          row.innerHTML =
+            '<div class="roster-info">' +
+              '<img class="mini-avatar" src="' + imgSrc + '" alt="" />' +
+              '<span class="roster-name" title="' + escapeHtml(stu.name) + '">' + escapeHtml(stu.name) + '</span>' +
+              (stu.group ? '<span class="form-tag">' + escapeHtml(stu.group) + '</span>' : '') +
+            '</div>' +
+            '<button type="button" class="presence-btn">' + (stu.present ? 'Present' : 'Absent') + '</button>';
+
+          row.querySelector('.presence-btn').addEventListener('click', function () {
+            stu.present = !stu.present;
+            if (!stu.present) {
+              var idx = state.seats.indexOf(stu.id);
+              if (idx !== -1) state.seats[idx] = null;
+            } else {
+              var openIdx = state.seats.indexOf(null);
+              if (openIdx !== -1) state.seats[openIdx] = stu.id;
+            }
+            renderAll();
+          });
+
+          rosterContainer.appendChild(row);
+        });
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function buildBoardBanner() {
+        var el = document.createElement('div');
+        el.className = 'board-banner';
+        el.innerHTML = '<span>Whiteboard / Front of Classroom</span><span class="teacher-badge">Teacher\'s Desk</span>';
+        return el;
+      }
+
+      function renderClassroom() {
+        var canvas = document.getElementById('classroomCanvas');
+        canvas.innerHTML = '';
+        var studentMap = buildStudentMap();
+
+        if (state.orientation === 'top') {
+          canvas.appendChild(buildBoardBanner());
+        }
+
+        var stack = document.createElement('div');
+        stack.className = 'rows-stack';
+        stack.style.marginTop = state.orientation === 'top' ? '16px' : '0';
+        stack.style.marginBottom = state.orientation === 'bottom' ? '16px' : '0';
+
+        var rowIndices = [];
+        for (var r = 0; r < state.rows; r++) rowIndices.push(r);
+        if (state.orientation === 'bottom') rowIndices.reverse();
+
+        // Rectangular grid dimensions for each desk pod:
+        // 2-seater: 2 cols x 1 row
+        // 4-seater: 2 cols x 2 rows (2 seats along top edge, 2 seats along bottom edge)
+        // 6-seater: 3 cols x 2 rows (2 seats on left edge, 2 in center, 2 on right edge)
+        var rectCols = state.deskSize === 6 ? 3 : 2;
+        var rectRows = state.deskSize === 2 ? 1 : 2;
+
+        rowIndices.forEach(function (rIdx) {
+          var section = document.createElement('div');
+          section.className = 'row-section';
+
+          var rTitle = document.createElement('div');
+          rTitle.className = 'row-title';
+          rTitle.textContent = 'Row ' + (rIdx + 1) + (rIdx === 0 ? ' (Front)' : '');
+          section.appendChild(rTitle);
+
+          var grid = document.createElement('div');
+          grid.className = 'desks-row-grid';
+          grid.style.setProperty('--cols', state.desksPerRow);
+
+          for (var dIdx = 0; dIdx < state.desksPerRow; dIdx++) {
+            var pod = document.createElement('div');
+            pod.className = 'desk-pod';
+
+            var deskNum = rIdx * state.desksPerRow + dIdx + 1;
+            var podTop = document.createElement('div');
+            podTop.className = 'desk-pod-top';
+            var subtitle = state.deskSize === 2
+              ? '2-Seater'
+              : (state.deskSize === 4 ? '4-Seater (2x2 Rect)' : '6-Seater (3x2 Rect)');
+            podTop.innerHTML = '<span>Desk ' + deskNum + '</span><span>' + subtitle + '</span>';
+            pod.appendChild(podTop);
+
+            var rectGrid = document.createElement('div');
+            rectGrid.className = 'desk-rect-grid size-' + state.deskSize;
+            rectGrid.style.setProperty('--rect-cols', rectCols);
+            rectGrid.style.setProperty('--rect-rows', rectRows);
+
+            for (var sOffset = 0; sOffset < state.deskSize; sOffset++) {
+              (function (localOffset) {
+                var seatIdx = (rIdx * state.desksPerRow * state.deskSize) + (dIdx * state.deskSize) + localOffset;
+                var stuId = state.seats[seatIdx];
+                var stu = stuId ? studentMap.get(stuId) : null;
+
+                var cell = document.createElement('div');
+                cell.className = 'rect-cell';
+
+                var seatBox = document.createElement('div');
+                seatBox.className = 'seat-box' + (stu ? ' has-student' : '');
+                if (state.selectedSource && state.selectedSource.type === 'seat' && state.selectedSource.index === seatIdx) {
+                  seatBox.classList.add('selected');
+                }
+
+                var numTag = document.createElement('span');
+                numTag.className = 'seat-idx';
+                numTag.textContent = '#' + (seatIdx + 1);
+                seatBox.appendChild(numTag);
+
+                if (stu) {
+                  seatBox.draggable = true;
+                  var imgSrc = stu.photo || buildSafeAvatarUri(stu.name, 0);
+                  var content = document.createElement('div');
+                  content.className = 'seat-student';
+                  content.innerHTML =
+                    '<img class="seat-photo" src="' + imgSrc + '" alt="" />' +
+                    '<div class="seat-name">' + escapeHtml(stu.name) + '</div>' +
+                    (stu.group ? '<span class="seat-form">' + escapeHtml(stu.group) + '</span>' : '');
+                  seatBox.appendChild(content);
+
+                  seatBox.addEventListener('dragstart', function (e) {
+                    state.dragSource = { type: 'seat', index: seatIdx };
+                    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+                  });
+                } else {
+                  var emptySpan = document.createElement('span');
+                  emptySpan.className = 'seat-empty-txt';
+                  emptySpan.textContent = 'Empty';
+                  seatBox.appendChild(emptySpan);
+                }
+
+                seatBox.addEventListener('dragover', function (e) {
+                  e.preventDefault();
+                  seatBox.classList.add('drag-hover');
+                });
+
+                seatBox.addEventListener('dragleave', function () {
+                  seatBox.classList.remove('drag-hover');
+                });
+
+                seatBox.addEventListener('drop', function (e) {
+                  e.preventDefault();
+                  seatBox.classList.remove('drag-hover');
+                  if (state.dragSource) {
+                    executeMoveOrSwap(state.dragSource, { type: 'seat', index: seatIdx });
+                    state.dragSource = null;
+                  }
+                });
+
+                seatBox.addEventListener('click', function () {
+                  if (!state.selectedSource) {
+                    if (stu) {
+                      state.selectedSource = { type: 'seat', index: seatIdx };
+                      renderAll();
+                    }
+                  } else {
+                    executeMoveOrSwap(state.selectedSource, { type: 'seat', index: seatIdx });
+                  }
+                });
+
+                cell.appendChild(seatBox);
+                rectGrid.appendChild(cell);
+              })(sOffset);
+            }
+
+            pod.appendChild(rectGrid);
+            grid.appendChild(pod);
+          }
+
+          section.appendChild(grid);
+          stack.appendChild(section);
+        });
+
+        canvas.appendChild(stack);
+
+        if (state.orientation === 'bottom') {
+          canvas.appendChild(buildBoardBanner());
+        }
+      }
+
+      /* ======================================================================
+         7. EVENT WIRING & INITIALIZATION
+      ====================================================================== */
+      async function processUploadedFile(file) {
+        if (!file) return;
+        if (!/\.xlsx$/i.test(file.name)) {
+          showToast('Please select a valid .xlsx Excel file.', 'error');
+          return;
+        }
+        try {
+          var buf = await file.arrayBuffer();
+          var students = await importXlsxBuffer(buf);
+          if (!students || students.length === 0) {
+            showToast('No student records found in that Excel file.', 'error');
+            return;
+          }
+          state.students = students;
+          var photoCount = students.filter(function (s) { return Boolean(s.photo); }).length;
+          document.getElementById('statusSubtitle').textContent =
+            'Loaded ' + students.length + ' students (' + photoCount + ' photos) from "' + file.name + '"';
+          shuffleAndAssignSeats();
+          showToast('Imported ' + students.length + ' students (' + photoCount + ' photos)!', 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('Import failed: ' + err.message, 'error');
+        }
+      }
+
+      function bindEvents() {
+        document.getElementById('btnRandomDemo').addEventListener('click', function () {
+          state.students = generateRandomDemoClass(18);
+          state.planTitle = 'Year 7 Classroom Seating Plan';
+          document.getElementById('planTitleInput').value = state.planTitle;
+          document.getElementById('statusSubtitle').textContent = 'Random demo class generated (18 students with portraits)';
+          shuffleAndAssignSeats();
+        });
+
+        var xlsxInput = document.getElementById('xlsxInput');
+        xlsxInput.addEventListener('change', function (e) {
+          if (e.target.files && e.target.files[0]) {
+            processUploadedFile(e.target.files[0]);
+            xlsxInput.value = '';
+          }
+        });
+
+        var dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('click', function () {
+          xlsxInput.click();
+        });
+        dropZone.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          dropZone.classList.add('drag-active');
+        });
+        dropZone.addEventListener('dragleave', function () {
+          dropZone.classList.remove('drag-active');
+        });
+        dropZone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          dropZone.classList.remove('drag-active');
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            processUploadedFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        var unseatedPool = document.getElementById('unseatedPool');
+        unseatedPool.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          unseatedPool.classList.add('drag-hover');
+        });
+        unseatedPool.addEventListener('dragleave', function () {
+          unseatedPool.classList.remove('drag-hover');
+        });
+        unseatedPool.addEventListener('drop', function (e) {
+          e.preventDefault();
+          unseatedPool.classList.remove('drag-hover');
+          if (state.dragSource && state.dragSource.type === 'seat') {
+            executeMoveOrSwap(state.dragSource, { type: 'pool' });
+            state.dragSource = null;
+          }
+        });
+
+        var segButtons = document.querySelectorAll('#deskTypeGroup .seg-btn');
+        for (var i = 0; i < segButtons.length; i++) {
+          segButtons[i].addEventListener('click', function () {
+            state.deskSize = parseInt(this.getAttribute('data-size'), 10);
+            renderAll();
+          });
+        }
+
+        document.getElementById('rowsDec').addEventListener('click', function () {
+          if (state.rows > 1) { state.rows--; renderAll(); }
+        });
+        document.getElementById('rowsInc').addEventListener('click', function () {
+          if (state.rows < 10) { state.rows++; renderAll(); }
+        });
+
+        document.getElementById('desksDec').addEventListener('click', function () {
+          if (state.desksPerRow > 1) { state.desksPerRow--; renderAll(); }
+        });
+        document.getElementById('desksInc').addEventListener('click', function () {
+          if (state.desksPerRow < 8) { state.desksPerRow++; renderAll(); }
+        });
+
+        document.getElementById('fillMode').addEventListener('change', function (e) {
+          state.fillMode = e.target.value;
+          shuffleAndAssignSeats();
+        });
+
+        document.getElementById('orientationMode').addEventListener('change', function (e) {
+          state.orientation = e.target.value;
+          renderClassroom();
+        });
+
+        document.getElementById('planTitleInput').addEventListener('input', function (e) {
+          state.planTitle = e.target.value;
+        });
+
+        document.getElementById('rosterFilter').addEventListener('input', function (e) {
+          state.rosterFilter = e.target.value;
+          renderSidebar();
+        });
+
+        document.getElementById('addStudentForm').addEventListener('submit', function (e) {
+          e.preventDefault();
+          var nameEl = document.getElementById('addNameInput');
+          var formEl = document.getElementById('addFormInput');
+          var nameVal = nameEl.value.trim();
+          var formVal = formEl.value.trim();
+          if (!nameVal) return;
+
+          var newStudent = {
+            id: 'stu_' + Date.now(),
+            name: nameVal,
+            group: formVal,
+            photo: buildSafeAvatarUri(nameVal, state.students.length),
+            present: true
+          };
+          state.students.push(newStudent);
+          syncSeatsToCapacity();
+          var emptySlot = state.seats.indexOf(null);
+          if (emptySlot !== -1) {
+            state.seats[emptySlot] = newStudent.id;
+          }
+          nameEl.value = '';
+          formEl.value = '';
+          renderAll();
+          showToast('Added ' + nameVal + ' to roster.', 'success');
+        });
+
+        document.getElementById('btnShuffle').addEventListener('click', shuffleAndAssignSeats);
+        document.getElementById('btnClearSeats').addEventListener('click', clearAllSeats);
+        document.getElementById('btnPrint').addEventListener('click', function () {
+          window.print();
+        });
+
+        document.getElementById('btnExport').addEventListener('click', async function () {
+          try {
+            showToast('Generating Excel (.xlsx) with photos...');
+            var map = buildStudentMap();
+            var blob = await exportXlsxWorkbook(state, map);
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            var cleanName = (state.planTitle || 'Seating_Plan')
+              .replace(/[^a-z0-9_\- ]/gi, '')
+              .trim()
+              .replace(/\s+/g, '_');
+            link.href = url;
+            link.download = (cleanName || 'Seating_Plan') + '.xlsx';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+            showToast('Exported Excel seating plan with photos!', 'success');
+          } catch (err) {
+            console.error(err);
+            showToast('Export failed: ' + err.message, 'error');
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        bindEvents();
+        state.students = generateRandomDemoClass(18);
+        shuffleAndAssignSeats();
+      });
+    })();
+  </script>
+</body>
+</html>

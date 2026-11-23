@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Chase Web Application: README</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-alt: #273549;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #f472b6;
+      --accent-2: #38bdf8;
+      --border: #334155;
+      --code-bg: #090d16;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 2.5rem 1.25rem;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.65;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2.25rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background-color: var(--accent);
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      font-size: 2rem;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 2.25rem 0 1rem;
+      font-size: 1.4rem;
+      color: var(--accent-2);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+    }
+
+    h3 {
+      margin: 1.5rem 0 0.65rem;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    p {
+      margin: 0 0 1rem;
+      color: var(--muted);
+    }
+
+    ul, ol {
+      margin: 0 0 1.25rem;
+      padding-left: 1.5rem;
+      color: var(--muted);
+    }
+
+    li {
+      margin-bottom: 0.55rem;
+    }
+
+    li strong {
+      color: var(--text);
+    }
+
+    ul ul {
+      margin-top: 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9em;
+      background-color: var(--code-bg);
+      color: #f9a8d4;
+      padding: 0.15rem 0.4rem;
+      border-radius: 5px;
+    }
+
+    pre {
+      margin: 0.75rem 0 1.5rem;
+      padding: 1.15rem;
+      background-color: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .callout {
+      background-color: var(--surface-alt);
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0 1.5rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <span class="badge">README</span>
+      <h1>The Chase Web Application</h1>
+      <p>
+        Welcome to <strong>The Chase (Sweet Edition)</strong>—a projection-friendly, high-contrast
+        interactive web application built for live hosting, classroom engagement, and team game sessions.
+      </p>
+      <p>
+        This guide outlines how the application works, the core game mechanics, and how to format and
+        customize your question bank.
+      </p>
+    </header>
+
+    <section aria-labelledby="overview">
+      <h2 id="overview">Overview &amp; Key Features</h2>
+      <ul>
+        <li>
+          <strong>Customizable Title:</strong> The header includes an editable title box (defaulting to
+          <em>Sweet Edition</em>) so you can rename your game on the fly.
+        </li>
+        <li>
+          <strong>Persistent Chaser Ladder:</strong> A 7-step board on the right side of the screen
+          featuring clear visual markers for both the Player and the Chaser.
+        </li>
+        <li>
+          <strong>Interactive Cash Builder:</strong> A built-in 1-minute (60-second) rapid-fire counter
+          where hosts can tally correct answers (worth 1 Sweet each). The timer automatically pulses and
+          enlarges during the final 15 seconds to build anticipation!
+        </li>
+        <li>
+          <strong>Dynamic Sweet Offers:</strong> Automatically calculates offers based on the banked Cash
+          Builder:
+          <ul>
+            <li><strong>High Offer:</strong> Cash Builder (Starts at Step 1, closer to the Chaser)</li>
+            <li><strong>Middle Offer:</strong> Standard Cash Builder (Starts at Step 2)</li>
+            <li><strong>Low Offer:</strong> Cash Builder (Starts at Step 3, safer distance)</li>
+          </ul>
+        </li>
+        <li>
+          <strong>LaTeX Math Support:</strong> Fully integrated with KaTeX to render mathematical
+          expressions in questions and options.
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="game-flow">
+      <h2 id="game-flow">Game Flow &amp; Host Instructions</h2>
+
+      <h3>Phase 1: Setup &amp; Cash Builder</h3>
+      <ol>
+        <li>
+          <strong>The Cash Builder Round:</strong> Click <code>⏱️ Play Cash Builder</code> to open the
+          1-minute timer. As contestants shout out correct answers, click <code>✅ Correct</code> to
+          bank sweets (1 sweet per click). When time expires, click <code>Bank Sweets &amp; Return to Setup</code>.
+        </li>
+        <li>
+          <strong>Alternative Manual Entry:</strong> You can also directly type your total banked sweets
+          into the <code>Edit Cash Builder</code> input box.
+        </li>
+        <li>
+          <strong>Choose Your Offer:</strong> Review the High, Middle, and Low offers displayed on the
+          board cards. Click your preferred offer to lock in your starting position on the 7-step
+          ladder, then click <code>Lock In Offer &amp; Face The Chaser</code>.
+        </li>
+      </ol>
+
+      <h3>Phase 2: Head-to-Head The Chase</h3>
+      <ol>
+        <li>
+          <strong>Answering Questions:</strong> Read the question and choose from the 3 multiple-choice
+          options (A, B, or C).
+          <ul>
+            <li><strong>Correct Answer:</strong> The player moves forward 1 step up the ladder.</li>
+            <li><strong>Incorrect Answer:</strong> The player holds their position.</li>
+          </ul>
+        </li>
+        <li>
+          <strong>The Chaser’s Turn:</strong> After each question round, use the Chaser Control Panel
+          at the bottom of the question card:
+          <ul>
+            <li>Click <code>Yes (+1 Chaser Step)</code> if the Chaser answered correctly.</li>
+            <li>Click <code>No (Hold Position)</code> if the Chaser missed it.</li>
+          </ul>
+        </li>
+        <li>
+          <strong>Win / Loss Conditions:</strong>
+          <ul>
+            <li>
+              Reach <strong>Step 6 (Home)</strong> to successfully outrun the Chaser and win your
+              banked sweets!
+            </li>
+            <li>
+              If the Chaser's position catches up to or overtakes the player's position, the game ends
+              in a catch.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>Smart Reset:</strong> Clicking <code>🔄 Reset (Next Unanswered)</code> automatically
+          advances to the next question set in your bank so you never loop back to the same first
+          question.
+        </li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="question-bank">
+      <h2 id="question-bank">Question Bank Formatting Guide</h2>
+      <p>
+        You can fully customize, add, or replace questions via the <code>⚙️ Settings &amp; Questions</code>
+        modal in the top-right corner. The question bank must be formatted as a valid JSON array of
+        objects.
+      </p>
+
+      <h3>Question Object Structure</h3>
+      <p>Each question item in the array requires three properties:</p>
+      <ul>
+        <li>
+          <code>q</code> (string): The question text. Supports plain text and LaTeX math.
+        </li>
+        <li>
+          <code>options</code> (array of 3 strings): Exactly three multiple-choice options.
+        </li>
+        <li>
+          <code>correct</code> (integer): The zero-based index of the correct option (<code>0</code>
+          for the first option, <code>1</code> for the second, <code>2</code> for the third).
+        </li>
+      </ul>
+
+      <h3>Example JSON Template</h3>
+      <pre><code class="language-json">[
+  {
+    "q": "What is the value of $\\frac{10}{2}$?",
+    "options": ["3", "5", "7"],
+    "correct": 1
+  },
+  {
+    "q": "Which planet is known as the Red Planet?",
+    "options": ["Venus", "Mars", "Jupiter"],
+    "correct": 1
+  }
+]</code></pre>
+
+      <h3>Using LaTeX Math Formatting</h3>
+      <p>
+        To include mathematical notation in your questions or answer options, wrap your LaTeX syntax in
+        single dollar signs (<code>$...$</code>) for inline math or double dollar signs
+        (<code>$$...$$</code>) for block math.
+      </p>
+      <div class="callout">
+        <strong>Example:</strong> <code>What is $\\int_{0}^{1} x \\, dx$?</code>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Chase Interactive Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX CSS & JS for LaTeX Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMath()"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F6F9] text-slate-900 min-h-screen flex flex-col">
+
+    <!-- Top Bar -->
+    <header class="bg-white border-b-2 border-red-600 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-red-600 text-white font-black px-4 py-1.5 rounded-lg text-2xl tracking-wider shadow-md">THE CHASE</div>
+            <!-- Editable Title Box -->
+            <input type="text" id="game-title-input" value="Sweet Edition" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-sm font-extrabold rounded px-2.5 py-1 focus:outline-none focus:border-red-600 transition w-36 sm:w-44" title="Click to edit game title">
+        </div>
+        <div class="flex items-center space-x-4">
+            <div id="status-badge" class="bg-red-100 text-red-700 border border-red-300 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">Setup Phase</div>
+            <button onclick="openSettings()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-300 px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 transition shadow-sm">
+                <span>⚙️ Settings & Questions</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        <!-- Left 2 Columns: Game Area -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- SETUP VIEW -->
+            <div id="view-setup" class="bg-white border-2 border-slate-300 rounded-2xl p-8 shadow-xl space-y-6">
+                <div class="text-center space-y-2">
+                    <h1 class="text-3xl md:text-4xl font-black text-red-600 uppercase tracking-wide">Cash Builder & Offer Board</h1>
+                    <p class="text-slate-700 font-semibold text-lg">Play the Cash Builder or edit your bank to choose your starting position!</p>
+                </div>
+
+                <div class="bg-slate-100 p-6 rounded-xl border border-slate-300 flex flex-col md:flex-row justify-between items-center gap-4 shadow-inner">
+                    <div>
+                        <span class="text-slate-600 text-sm font-extrabold uppercase tracking-wider">Cash Builder Banked:</span>
+                        <div id="display-cashbuilder" class="text-4xl font-black text-slate-900">50 Sweets</div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <button onclick="openCashBuilderModal()" class="bg-red-600 hover:bg-red-700 text-white font-black px-4 py-2.5 rounded-xl text-sm uppercase tracking-wide transition shadow-md flex items-center space-x-2">
+                            <span>⏱️ Play Cash Builder</span>
+                        </button>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-xs font-bold text-slate-800">Edit:</label>
+                            <input type="number" id="input-cashbuilder" value="50" class="bg-white border-2 border-slate-400 rounded-lg px-2 py-1.5 w-20 text-slate-900 text-base font-black focus:outline-none focus:border-red-600 text-center shadow-sm" onchange="updateCashBuilder(this.value)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Offer Cards (ITV Board Style) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- High Offer -->
+                    <div onclick="selectOffer('high')" id="card-high" class="cursor-pointer bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-red-600 rounded-xl p-6 text-center transition space-y-3 group shadow-md">
+                        <div class="text-xs font-black text-red-600 uppercase tracking-widest">High Offer (2×)</div>
+                        <div id="val-high" class="text-3xl font-black text-red-700">100 Sweets</div>
+                        <p class="text-xs text-slate-600 font-bold">Start at Step 1 (Closer to Chaser)</p>
+                    </div>
+                    <!-- Middle Offer -->
+                    <div onclick="selectOffer('mid')" id="card-mid" class="cursor-pointer bg-white hover:bg-slate-50 border-2 border-red-600 rounded-xl p-6 text-center transition space-y-3 group shadow-lg shadow-red-600/10">
+                        <div class="text-xs font-black text-red-600 uppercase tracking-widest">Cash Builder Offer</div>
+                        <div id="val-mid" class="text-3xl font-black text-slate-900">50 Sweets</div>
+                        <p class="text-xs text-slate-600 font-bold">Start at Step 2 (Standard)</p>
+                    </div>
+                    <!-- Low Offer -->
+                    <div onclick="selectOffer('low')" id="card-low" class="cursor-pointer bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-red-600 rounded-xl p-6 text-center transition space-y-3 group shadow-md">
+                        <div class="text-xs font-black text-emerald-700 uppercase tracking-widest">Low Offer (½)</div>
+                        <div id="val-low" class="text-3xl font-black text-slate-700">25 Sweets</div>
+                        <p class="text-xs text-slate-600 font-bold">Start at Step 3 (Safer)</p>
+                    </div>
+                </div>
+
+                <button onclick="startGame()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl text-xl uppercase tracking-wider transition shadow-lg shadow-red-600/30">
+                    Lock In Offer & Face The Chaser
+                </button>
+            </div>
+
+            <!-- GAMEPLAY VIEW -->
+            <div id="view-game" class="hidden space-y-6">
+                <!-- Question Card -->
+                <div class="bg-white border-2 border-slate-300 rounded-2xl p-8 shadow-xl space-y-6">
+                    <div class="flex justify-between items-center text-sm font-extrabold border-b border-slate-200 pb-4">
+                        <span id="question-counter" class="text-red-600 text-base">Question 1 of 7</span>
+                        <span id="current-stakes" class="bg-red-50 text-red-700 border border-red-300 px-4 py-1.5 rounded-lg text-base font-black">Stakes: 50 Sweets</span>
+                    </div>
+
+                    <h2 id="question-text" class="text-2xl md:text-4xl font-black text-slate-900 leading-tight">
+                        Loading question...
+                    </h2>
+
+                    <!-- Options Grid -->
+                    <div id="options-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Chaser Control Panel -->
+                    <div class="bg-slate-100 border-2 border-slate-300 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 shadow-sm">
+                        <div class="text-sm font-extrabold text-slate-800">
+                            Chaser's Move: Did the Chaser get it right?
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="chaserAdvance(true)" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-black text-sm transition shadow-md">
+                                Yes (+1 Chaser Step)
+                            </button>
+                            <button onclick="chaserAdvance(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-400 px-5 py-2.5 rounded-lg font-extrabold text-sm transition">
+                                No (Hold Position)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Question / Reset Action -->
+                <div class="flex justify-between items-center">
+                    <button onclick="nextQuestion()" id="btn-next" class="bg-red-600 hover:bg-red-700 text-white font-black px-6 py-3 rounded-xl transition shadow-md text-base">
+                        Next Question →
+                    </button>
+                    <button onclick="resetToNextGame()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-400 font-bold px-6 py-3 rounded-xl transition shadow-sm">
+                        🔄 Reset (Next Unanswered)
+                    </button>
+                </div>
+            </div>
+
+            <!-- GAME OVER / WIN MODAL VIEW -->
+            <div id="view-gameover" class="hidden bg-white border-2 border-slate-300 rounded-2xl p-10 text-center space-y-6 shadow-xl">
+                <h2 id="gameover-title" class="text-4xl md:text-5xl font-black text-red-600">CONGRATULATIONS!</h2>
+                <p id="gameover-message" class="text-xl text-slate-700 font-bold">You successfully outran the Chaser and banked your sweets!</p>
+                <button onclick="resetToNextGame()" class="bg-red-600 hover:bg-red-700 text-white font-black px-8 py-4 rounded-xl text-xl uppercase tracking-wider transition shadow-lg shadow-red-600/30">
+                    Start Next Game
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Right 1 Column: Enlarged Persistent Chaser Board Sidebar -->
+        <div class="lg:col-span-1 bg-white border-2 border-slate-300 rounded-2xl p-6 shadow-xl flex flex-col items-center space-y-6">
+            <div class="text-center w-full pb-2 border-b border-slate-200">
+                <h3 class="text-sm font-black uppercase tracking-widest text-red-600">The Chase Ladder</h3>
+                <p class="text-xs text-slate-700 font-extrabold mt-1">7 Steps to Home</p>
+            </div>
+
+            <!-- Vertical Board Ladder -->
+            <div id="ladder-board" class="w-full flex flex-col space-y-3 py-2">
+                <!-- Rendered dynamically from step 7 down to 0 -->
+            </div>
+
+            <div class="w-full border-t border-slate-200 pt-4 text-xs space-y-2.5 text-slate-700 font-extrabold">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-4 h-4 rounded bg-blue-600 border border-blue-400 shadow-sm"></div>
+                    <span class="text-sm">Player Position</span>
+                </div>
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-4 h-4 rounded bg-red-600 border border-red-400 shadow-sm"></div>
+                    <span class="text-sm">Chaser Position</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white border-2 border-slate-300 rounded-2xl max-w-2xl w-full p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-4">
+                <h3 class="text-2xl font-black text-slate-900">Game Settings & Question Bank</h3>
+                <button onclick="closeSettings()" class="text-slate-500 hover:text-slate-900 font-bold text-2xl">×</button>
+            </div>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-extrabold text-slate-800 mb-2">Sweet Offers Setup</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <span class="text-xs font-extrabold text-red-600">High Offer (2×)</span>
+                            <input type="number" id="set-high" value="100" class="w-full bg-slate-50 border-2 border-slate-300 rounded-lg p-2.5 text-slate-900 font-black text-center text-lg shadow-sm">
+                        </div>
+                        <div>
+                            <span class="text-xs font-extrabold text-slate-700">Mid Offer</span>
+                            <input type="number" id="set-mid" value="50" class="w-full bg-slate-50 border-2 border-slate-300 rounded-lg p-2.5 text-slate-900 font-black text-center text-lg shadow-sm">
+                        </div>
+                        <div>
+                            <span class="text-xs font-extrabold text-emerald-700">Low Offer (½)</span>
+                            <input type="number" id="set-low" value="25" class="w-full bg-slate-50 border-2 border-slate-300 rounded-lg p-2.5 text-slate-900 font-black text-center text-lg shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-extrabold text-slate-800 mb-1">Question Bank (JSON Format)</label>
+                    <p class="text-xs text-slate-600 mb-2 font-semibold">Edit or paste questions below with LaTeX support (e.g. $\frac{1}{2}$ or $x^2$).</p>
+                    <textarea id="set-questions-json" rows="10" class="w-full bg-slate-50 border-2 border-slate-300 rounded-xl p-3.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-red-600 shadow-inner"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+                <button onclick="closeSettings()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-sm">Cancel</button>
+                <button onclick="saveSettings()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-black text-sm shadow-md">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CASH BUILDER MODAL (1 Minute Counter with Pulsing Final 15s Timer) -->
+    <div id="cashbuilder-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white border-2 border-slate-300 rounded-2xl max-w-xl w-full p-8 space-y-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-4">
+                <h3 class="text-2xl font-black text-slate-900">⏱️ Cash Builder Counter</h3>
+                <button onclick="closeCashBuilderModal()" class="text-slate-500 hover:text-slate-900 font-bold text-2xl">×</button>
+            </div>
+
+            <!-- Pre-Start View -->
+            <div id="cb-view-start" class="text-center space-y-4 py-4">
+                <p class="text-slate-700 font-semibold text-lg">You have <span class="font-bold text-red-600">1 minute (60s)</span>! Click <span class="text-emerald-600 font-bold">Correct</span> for every right answer. Each correct answer adds <span class="font-bold text-emerald-700">1 Sweet</span> to your bank.</p>
+                <button onclick="startCashBuilderRound()" class="bg-red-600 hover:bg-red-700 text-white font-black px-8 py-3.5 rounded-xl text-lg uppercase tracking-wider transition shadow-lg">
+                    Start 1-Minute Timer
+                </button>
+            </div>
+
+            <!-- Active Play View -->
+            <div id="cb-view-game" class="hidden space-y-6 text-center py-2">
+                <div class="flex flex-col sm:flex-row justify-between items-center border-b border-slate-200 pb-4 gap-2">
+                    <!-- Enlarged Timer Font with dynamic pulse in final 15s -->
+                    <span id="cb-timer" class="text-slate-800 text-5xl font-black font-mono transition-all duration-300">60s</span>
+                    <span id="cb-score" class="text-emerald-700 text-2xl font-black">Banked: 0 Sweets</span>
+                </div>
+                <div class="space-y-4 py-2">
+                    <p class="text-slate-600 font-bold text-sm uppercase tracking-wider">Rapid Tally</p>
+                    <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                        <button onclick="recordCBAnswer(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black py-8 rounded-2xl text-xl shadow-lg transition transform active:scale-95">
+                            ✅ Correct<br><span class="text-xs font-semibold opacity-90">(+1 Sweet)</span>
+                        </button>
+                        <button onclick="recordCBAnswer(false)" class="bg-red-600 hover:bg-red-700 text-white font-black py-8 rounded-2xl text-xl shadow-lg transition transform active:scale-95">
+                            ❌ Incorrect<br><span class="text-xs font-semibold opacity-90">(0 Sweets)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Over / Result View -->
+            <div id="cb-view-result" class="hidden text-center space-y-6 py-4">
+                <h4 class="text-3xl font-black text-emerald-600">Time's Up!</h4>
+                <p id="cb-final-msg" class="text-xl text-slate-700 font-bold">You banked 0 Sweets!</p>
+                <button onclick="applyCashBuilderResult()" class="bg-red-600 hover:bg-red-700 text-white font-black px-8 py-3.5 rounded-xl text-lg uppercase tracking-wider transition shadow-lg">
+                    Bank Sweets & Return to Setup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        let questionBank = [
+            { q: "What is the value of $\\frac{10}{2}$?", options: ["3", "5", "7"], correct: 1 },
+            { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter"], correct: 1 },
+            { q: "Who painted the Mona Lisa?", options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci"], correct: 2 },
+            { q: "What is the chemical symbol for Gold?", options: ["Ag", "Au", "Pb"], correct: 1 },
+            { q: "How many bones are in the adult human body?", options: ["206", "215", "198"], correct: 0 },
+            { q: "Which ocean is the largest by surface area?", options: ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean"], correct: 2 },
+            { q: "In which year did the Titanic sink?", options: ["1912", "1905", "1923"], correct: 0 }
+        ];
+
+        let gameOffers = { high: 100, mid: 50, low: 25 };
+        let selectedOfferType = 'mid';
+        let currentStakes = 50;
+        let playerPos = 2; // Dynamic player start
+        let chaserPos = 0; // Chaser always starts at Step 0
+        let currentQuestionIndex = 0;
+        let answeredLocked = false;
+
+        // Cash Builder Mini-Game State (1 Minute Timer & 1 Sweet per correct answer)
+        let cbTimer = 60;
+        let cbInterval = null;
+        let cbEarnedSweets = 0;
+
+        function renderMath() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        function init() {
+            document.getElementById('set-questions-json').value = JSON.stringify(questionBank, null, 2);
+            updateOfferDisplay();
+            selectOffer('mid');
+            renderLadder();
+            renderMath();
+        }
+
+        function updateCashBuilder(val) {
+            let num = parseInt(val) || 50;
+            gameOffers.mid = num;
+            gameOffers.high = num * 2;
+            gameOffers.low = Math.round(num / 2);
+            updateOfferDisplay();
+        }
+
+        function updateOfferDisplay() {
+            document.getElementById('display-cashbuilder').innerText = gameOffers.mid + " Sweets";
+            document.getElementById('val-high').innerText = gameOffers.high + " Sweets";
+            document.getElementById('val-mid').innerText = gameOffers.mid + " Sweets";
+            document.getElementById('val-low').innerText = gameOffers.low + " Sweets";
+            document.getElementById('set-high').value = gameOffers.high;
+            document.getElementById('set-mid').value = gameOffers.mid;
+            document.getElementById('set-low').value = gameOffers.low;
+            document.getElementById('input-cashbuilder').value = gameOffers.mid;
+        }
+
+        function selectOffer(type) {
+            selectedOfferType = type;
+            document.querySelectorAll('[id^="card-"]').forEach(c => {
+                c.classList.remove('border-red-600', 'bg-slate-100', 'shadow-xl');
+                c.classList.add('border-slate-300', 'bg-white');
+            });
+            const sel = document.getElementById('card-' + type);
+            sel.classList.remove('border-slate-300', 'bg-white');
+            sel.classList.add('border-red-600', 'bg-slate-100', 'shadow-xl');
+
+            chaserPos = 0;
+            if(type === 'high') { playerPos = 1; currentStakes = gameOffers.high; }
+            else if(type === 'mid') { playerPos = 2; currentStakes = gameOffers.mid; }
+            else if(type === 'low') { playerPos = 3; currentStakes = gameOffers.low; }
+            renderLadder();
+        }
+
+        function startGame() {
+            document.getElementById('view-setup').classList.add('hidden');
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('status-badge').innerText = "In Progress";
+            loadQuestion();
+            renderLadder();
+        }
+
+        function loadQuestion() {
+            answeredLocked = false;
+            if(currentQuestionIndex >= questionBank.length) currentQuestionIndex = 0;
+            let qData = questionBank[currentQuestionIndex];
+            
+            document.getElementById('question-counter').innerText = `Question ${currentQuestionIndex + 1} of ${questionBank.length}`;
+            document.getElementById('current-stakes').innerText = `Stakes: ${currentStakes} Sweets`;
+            document.getElementById('question-text').innerText = qData.q;
+
+            let optsHtml = '';
+            qData.options.forEach((opt, idx) => {
+                let letter = ['A', 'B', 'C'][idx];
+                optsHtml += `
+                    <button onclick="checkAnswer(${idx}, ${qData.correct}, this)" class="option-btn bg-slate-50 hover:bg-slate-100 border-2 border-slate-300 rounded-xl p-5 text-left transition flex items-center space-x-4 group shadow-sm">
+                        <span class="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-red-600 text-slate-800 group-hover:text-white flex items-center justify-center font-black text-base transition shadow-sm">${letter}</span>
+                        <span class="text-slate-900 font-bold text-lg">${opt}</span>
+                    </button>
+                `;
+            });
+            document.getElementById('options-container').innerHTML = optsHtml;
+            renderMath();
+        }
+
+        function checkAnswer(selected, correct, btnEl) {
+            if(answeredLocked) return;
+            answeredLocked = true;
+
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach((b, idx) => {
+                b.disabled = true;
+                if(idx === correct) {
+                    b.classList.add('bg-emerald-100', 'border-emerald-600', 'text-emerald-950');
+                } else if(idx === selected && selected !== correct) {
+                    b.classList.add('bg-red-100', 'border-red-600', 'text-red-950');
+                }
+            });
+
+            if(selected === correct) {
+                playerPos = Math.min(6, playerPos + 1);
+                renderLadder();
+                checkWinCondition();
+            }
+        }
+
+        function chaserAdvance(didChaserGetIt) {
+            if(didChaserGetIt) {
+                chaserPos = Math.min(6, chaserPos + 1);
+                renderLadder();
+                checkWinCondition();
+            }
+        }
+
+        function renderLadder() {
+            let ladder = document.getElementById('ladder-board');
+            let html = '';
+            for(let i = 6; i >= 0; i--) {
+                let isHome = (i === 6);
+                let hasPlayer = (playerPos === i);
+                let hasChaser = (chaserPos === i);
+
+                let bgClass = "bg-slate-50 border-slate-300 text-slate-700 py-4";
+                if(isHome) bgClass = "bg-amber-50 border-amber-400 text-amber-900 font-black shadow-sm py-4";
+
+                html += `
+                    <div class="w-full flex items-center justify-between px-4 rounded-xl border-2 ${bgClass} text-sm font-extrabold">
+                        <span class="font-mono text-base">Step ${i}</span>
+                        <div class="flex space-x-2">
+                            ${hasChaser ? '<span class="px-3 py-1.5 rounded-lg bg-red-600 text-white font-black text-xs shadow-md animate-pulse">CHASER</span>' : ''}
+                            ${hasPlayer ? '<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-black text-xs shadow-md">YOU</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            ladder.innerHTML = html;
+        }
+
+        function checkWinCondition() {
+            if(playerPos >= 6) {
+                triggerGameOver(true);
+            } else if(chaserPos >= playerPos) {
+                triggerGameOver(false);
+            }
+        }
+
+        function triggerGameOver(won) {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-gameover').classList.remove('hidden');
+            let title = document.getElementById('gameover-title');
+            let msg = document.getElementById('gameover-message');
+
+            if(won) {
+                title.innerText = "YOU BEAT THE CHASER!";
+                title.className = "text-4xl md:text-5xl font-black text-emerald-600";
+                msg.innerText = `Fantastic job! You successfully reached home and banked your ${currentStakes} sweets!`;
+            } else {
+                title.innerText = "CAUGHT BY THE CHASER!";
+                title.className = "text-4xl md:text-5xl font-black text-red-600";
+                msg.innerText = "Oh no! The Chaser caught up to your position. Better luck next time!";
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if(currentQuestionIndex >= questionBank.length) {
+                currentQuestionIndex = 0;
+            }
+            loadQuestion();
+        }
+
+        function resetToNextGame() {
+            document.getElementById('view-gameover').classList.add('hidden');
+            document.getElementById('view-setup').classList.remove('hidden');
+            document.getElementById('status-badge').innerText = "Setup Phase";
+            currentQuestionIndex = (currentQuestionIndex + 1) % questionBank.length;
+            selectOffer('mid');
+            renderLadder();
+        }
+
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        // Cash Builder Modal Functions
+        function openCashBuilderModal() {
+            document.getElementById('cashbuilder-modal').classList.remove('hidden');
+            document.getElementById('cb-view-start').classList.remove('hidden');
+            document.getElementById('cb-view-game').classList.add('hidden');
+            document.getElementById('cb-view-result').classList.add('hidden');
+            cbTimer = 60;
+            cbEarnedSweets = 0;
+            let timerEl = document.getElementById('cb-timer');
+            timerEl.innerText = "60s";
+            timerEl.className = "text-slate-800 text-5xl font-black font-mono transition-all duration-300";
+        }
+
+        function closeCashBuilderModal() {
+            clearInterval(cbInterval);
+            document.getElementById('cashbuilder-modal').classList.add('hidden');
+        }
+
+        function startCashBuilderRound() {
+            document.getElementById('cb-view-start').classList.add('hidden');
+            document.getElementById('cb-view-game').classList.remove('hidden');
+            cbTimer = 60;
+            cbEarnedSweets = 0;
+            
+            let timerEl = document.getElementById('cb-timer');
+            timerEl.innerText = "60s";
+            timerEl.className = "text-slate-800 text-5xl font-black font-mono transition-all duration-300";
+            document.getElementById('cb-score').innerText = `Banked: ${cbEarnedSweets} Sweets`;
+            
+            clearInterval(cbInterval);
+            cbInterval = setInterval(() => {
+                cbTimer--;
+                timerEl.innerText = cbTimer + "s";
+                
+                // Dynamic enlargement and pulse in final 15 seconds
+                if(cbTimer <= 15 && cbTimer > 0) {
+                    timerEl.className = "text-red-600 text-6xl font-black font-mono scale-110 animate-pulse transition-all duration-300";
+                } else if(cbTimer <= 0) {
+                    clearInterval(cbInterval);
+                    endCashBuilderRound();
+                }
+            }, 1000);
+        }
+
+        function recordCBAnswer(isCorrect) {
+            if(cbTimer > 0) {
+                if(isCorrect) {
+                    cbEarnedSweets += 1; // 1 sweet per correct click
+                    document.getElementById('cb-score').innerText = `Banked: ${cbEarnedSweets} Sweets`;
+                }
+            }
+        }
+
+        function endCashBuilderRound() {
+            document.getElementById('cb-view-game').classList.add('hidden');
+            document.getElementById('cb-view-result').classList.remove('hidden');
+            document.getElementById('cb-final-msg').innerText = `Time's up! You banked ${cbEarnedSweets} Sweets!`;
+        }
+
+        function applyCashBuilderResult() {
+            if(cbEarnedSweets > 0) {
+                updateCashBuilder(cbEarnedSweets);
+            }
+            closeCashBuilderModal();
+        }
+
+        function saveSettings() {
+            try {
+                let parsed = JSON.parse(document.getElementById('set-questions-json').value);
+                if(Array.isArray(parsed) && parsed.length > 0) {
+                    questionBank = parsed;
+                }
+                gameOffers.high = parseInt(document.getElementById('set-high').value) || 100;
+                gameOffers.mid = parseInt(document.getElementById('set-mid').value) || 50;
+                gameOffers.low = parseInt(document.getElementById('set-low').value) || 25;
+                updateOfferDisplay();
+                closeSettings();
+                alert("Settings and question bank updated successfully!");
+                renderMath();
+            } catch(e) {
+                alert("Invalid JSON format in question bank. Please check your syntax.");
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

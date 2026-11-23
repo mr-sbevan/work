@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">11
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arithmetic Game — Mental Math Speed Drill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            zetabanner: '#ebebeb',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Tabular numerals prevent layout jitter when timer, score, or speed ticks */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Hide number input spinners for clean Arithmetic-style range boxes */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    /* Subtle ambient studio glow in dark mode */
+    .studio-bg-glow {
+      background-image:
+        radial-gradient(circle at 18% 12%, rgba(99, 102, 241, 0.14), transparent 36%),
+        radial-gradient(circle at 82% 85%, rgba(16, 185, 129, 0.10), transparent 38%);
+    }
+    html:not(.dark) .studio-bg-glow {
+      background-image:
+        radial-gradient(circle at 18% 12%, rgba(99, 102, 241, 0.06), transparent 38%),
+        radial-gradient(circle at 82% 85%, rgba(16, 185, 129, 0.05), transparent 40%);
+    }
+
+    /* Crisp emerald flash animation on banner & input upon solving a problem */
+    @keyframes bannerSolveGlow {
+      0% {
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.65), 0 12px 32px -6px rgba(16, 185, 129, 0.28);
+        border-color: rgba(16, 185, 129, 0.85);
+      }
+      100% {
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.25);
+      }
+    }
+    .banner-solve-flash {
+      animation: bannerSolveGlow 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes inputSolvePulse {
+      0% {
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5);
+        border-color: #10b981;
+      }
+      100% {
+        box-shadow: 0 0 0 0px rgba(16, 185, 129, 0);
+      }
+    }
+    .solve-flash {
+      animation: inputSolvePulse 0.26s ease-out;
+    }
+
+    /* Floating +1 & solve-speed micro-callout */
+    @keyframes floatUpFade {
+      0% {
+        opacity: 0;
+        transform: translateY(6px) scale(0.92);
+      }
+      18% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-24px) scale(0.98);
+      }
+    }
+    .float-feedback {
+      animation: floatUpFade 0.68s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Streak milestone pop */
+    @keyframes milestonePop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.16); }
+      100% { transform: scale(1); }
+    }
+    .milestone-pop {
+      animation: milestonePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col studio-bg-glow transition-colors duration-200 selection:bg-indigo-500/20 selection:text-indigo-900 dark:selection:text-indigo-200">
+
+  <!-- ==================== GLOBAL UTILITY BAR (THEME & SOUND) ==================== -->
+  <nav class="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex h-2.5 w-2.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.75)]"></span>
+      <span class="text-xs font-mono font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Calculator Buster</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Sound Toggle -->
+      <button
+        type="button"
+        id="sound-toggle-btn"
+        aria-label="Toggle sound effects"
+        title="Toggle tactile audio cues"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-400/60 dark:hover:border-indigo-500/60 shadow-2xs transition-all cursor-pointer"
+      >
+        <svg id="sound-icon-off" class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <line x1="23" y1="9" x2="17" y2="15"></line>
+          <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+        <svg id="sound-icon-on" class="hidden w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <span id="sound-label" class="hidden sm:inline">Sound Off</span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button
+        type="button"
+        id="theme-toggle-btn"
+        aria-label="Toggle theme"
+        title="Switch between Midnight and Classic Light"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-indigo-400/60 dark:hover:border-indigo-500/60 shadow-2xs transition-all cursor-pointer"
+      >
+        <svg id="theme-icon-sun" class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="theme-icon-moon" class="hidden w-3.5 h-3.5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <span id="theme-label" class="hidden sm:inline">Midnight Jazz</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==================== 1. CONFIGURATION / START SCREEN ==================== -->
+  <main id="setup-screen" class="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+    <header class="mb-6 border-b border-slate-200/90 dark:border-slate-800 pb-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          Arithmetic Game
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Zero-latency mental math speed drill. Answers submit automatically as you type.
+        </p>
+      </div>
+
+      <!-- High Score Pill & Inline Two-Step Reset -->
+      <div class="flex flex-col items-start sm:items-end gap-1.5 self-start sm:self-auto shrink-0">
+        <div id="best-score-badge" class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1.5 rounded-lg border border-amber-300/80 dark:border-amber-700/60 shadow-2xs tabular-nums">
+          <span aria-hidden="true">🏆</span>
+          <span id="best-score-text">Best (120s): —</span>
+        </div>
+        <div id="reset-scores-controls" class="flex items-center gap-2 text-[11px]">
+          <button type="button" id="reset-scores-btn" class="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 underline underline-offset-2 transition-colors cursor-pointer">
+            Reset High Scores
+          </button>
+          <div id="reset-scores-confirm-group" class="hidden items-center gap-1.5 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800/80 px-2 py-0.5 rounded">
+            <span class="text-rose-700 dark:text-rose-300 font-medium">Wipe all bests?</span>
+            <button type="button" id="confirm-reset-scores-btn" class="text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-white font-bold underline cursor-pointer">
+              Confirm
+            </button>
+            <span class="text-rose-300 dark:text-rose-700">|</span>
+            <button type="button" id="cancel-reset-scores-btn" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <form id="settings-form" class="space-y-5">
+      <!-- Operations Section -->
+      <section class="space-y-3.5 bg-white/90 dark:bg-slate-900/75 backdrop-blur-xs p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2.5">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Operations &amp; Number Ranges</h2>
+          <button type="button" id="reset-defaults-btn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline font-medium cursor-pointer">
+            Reset defaults
+          </button>
+        </div>
+
+        <!-- Addition -->
+        <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base py-1">
+          <label class="inline-flex items-center gap-2.5 min-w-[138px] cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200">
+            <input type="checkbox" id="op-add" checked class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Addition</span>
+          </label>
+          <div id="range-add" class="flex flex-wrap items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <span class="text-slate-400 dark:text-slate-500">(</span>
+            <input type="number" id="add-min1" value="2" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Addition first operand min" />
+            <span class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">to</span>
+            <input type="number" id="add-max1" value="100" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Addition first operand max" />
+            <span class="text-slate-400 dark:text-slate-500">)</span>
+            <span class="font-semibold px-1 text-indigo-600 dark:text-indigo-400">+</span>
+            <span class="text-slate-400 dark:text-slate-500">(</span>
+            <input type="number" id="add-min2" value="2" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Addition second operand min" />
+            <span class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">to</span>
+            <input type="number" id="add-max2" value="100" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Addition second operand max" />
+            <span class="text-slate-400 dark:text-slate-500">)</span>
+          </div>
+        </div>
+
+        <!-- Subtraction -->
+        <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base py-1">
+          <label class="inline-flex items-center gap-2.5 min-w-[138px] cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200">
+            <input type="checkbox" id="op-sub" checked class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Subtraction</span>
+          </label>
+          <span class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 italic">Addition problems in reverse</span>
+        </div>
+
+        <!-- Multiplication -->
+        <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base py-1">
+          <label class="inline-flex items-center gap-2.5 min-w-[138px] cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200">
+            <input type="checkbox" id="op-mul" checked class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Multiplication</span>
+          </label>
+          <div id="range-mul" class="flex flex-wrap items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <span class="text-slate-400 dark:text-slate-500">(</span>
+            <input type="number" id="mul-min1" value="2" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Multiplication first operand min" />
+            <span class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">to</span>
+            <input type="number" id="mul-max1" value="12" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Multiplication first operand max" />
+            <span class="text-slate-400 dark:text-slate-500">)</span>
+            <span class="font-semibold px-1 text-indigo-600 dark:text-indigo-400">&times;</span>
+            <span class="text-slate-400 dark:text-slate-500">(</span>
+            <input type="number" id="mul-min2" value="2" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Multiplication second operand min" />
+            <span class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">to</span>
+            <input type="number" id="mul-max2" value="12" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Multiplication second operand max" />
+            <span class="text-slate-400 dark:text-slate-500">)</span>
+          </div>
+        </div>
+
+        <!-- Division -->
+        <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base py-1">
+          <label class="inline-flex items-center gap-2.5 min-w-[138px] cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200">
+            <input type="checkbox" id="op-div" checked class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Division</span>
+          </label>
+          <span class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 italic">Multiplication problems in reverse</span>
+        </div>
+
+        <hr class="border-slate-200/80 dark:border-slate-800 my-2" />
+
+        <!-- Squares -->
+        <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base py-1">
+          <label class="inline-flex items-center gap-2.5 min-w-[138px] cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200">
+            <input type="checkbox" id="op-sq" checked class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Squares</span>
+          </label>
+          <div id="range-sq" class="flex flex-wrap items-center gap-1.5 text-slate-700 dark:text-slate-300">
+            <span class="text-slate-400 dark:text-slate-500">(</span>
+            <input type="number" id="sq-min" value="2" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Square base min" />
+            <span class="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">to</span>
+            <input type="number" id="sq-max" value="25" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Square base max" />
+            <span class="text-slate-400 dark:text-slate-500">)</span>
+            <span class="font-semibold text-indigo-600 dark:text-indigo-400"><sup>2</sup></span>
+            <label class="inline-flex items-center gap-1.5 ml-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 cursor-pointer select-none bg-slate-100 dark:bg-slate-800/90 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700">
+              <input type="checkbox" id="op-sqrt" class="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              <span>Include &radic;n</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Modifiers: Optional Negatives & Optional Fractions -->
+      <section class="space-y-3.5 bg-white/90 dark:bg-slate-900/75 backdrop-blur-xs p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-slate-800 pb-2.5">
+          Optional Modifiers
+        </h2>
+
+        <!-- Optional Negatives -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-1">
+          <label class="inline-flex items-center gap-2.5 cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200 text-sm sm:text-base">
+            <input type="checkbox" id="mod-negatives" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+            <span>Include Negatives</span>
+          </label>
+          <span class="text-xs text-slate-500 dark:text-slate-400 pl-6 sm:pl-0">
+            Allows negative operands &amp; answers (e.g., <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">12 + (-7)</code>)
+          </span>
+        </div>
+
+        <!-- Optional Fractions -->
+        <div class="flex flex-col gap-2 py-1">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="inline-flex items-center gap-2.5 cursor-pointer select-none font-medium text-slate-800 dark:text-slate-200 text-sm sm:text-base">
+              <input type="checkbox" id="mod-fractions" class="w-4 h-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-indigo-600 focus:ring-indigo-500" />
+              <span>Include Fractions</span>
+            </label>
+            <div id="fraction-settings" class="flex items-center gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 pl-6 sm:pl-0">
+              <span>Max denominator:</span>
+              <input type="number" id="frac-max-denom" value="12" min="2" max="50" class="w-16 px-2 py-1 text-center font-mono text-sm bg-slate-50 dark:bg-slate-950/90 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 tabular-nums" aria-label="Max denominator" />
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 pl-6">
+            Mixes in clean fraction arithmetic (+, &minus;, &times;, &divide;). Accepts <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-700 dark:text-slate-300">a/b</code>, integers, or decimals.
+          </p>
+        </div>
+      </section>
+
+      <!-- Duration & Start Controls -->
+      <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="duration-select" class="text-sm font-medium text-slate-700 dark:text-slate-300">Duration:</label>
+          <select id="duration-select" class="px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-100 font-medium cursor-pointer">
+            <option value="30">30 seconds</option>
+            <option value="60">60 seconds</option>
+            <option value="120" selected>120 seconds</option>
+            <option value="300">300 seconds</option>
+            <option value="custom">Custom...</option>
+          </select>
+          <div id="custom-duration-wrap" class="hidden items-center gap-1.5">
+            <input type="number" id="custom-duration-input" value="90" min="5" max="3600" class="w-20 px-2.5 py-2 text-sm font-mono text-center bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-indigo-500 tabular-nums" aria-label="Custom seconds" />
+            <span class="text-xs text-slate-500 dark:text-slate-400">sec</span>
+          </div>
+        </div>
+
+        <button type="submit" id="start-btn" class="w-full sm:w-auto px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-lg shadow-md shadow-indigo-600/20 dark:shadow-indigo-950/60 transition-all cursor-pointer text-base">
+          Start Drill
+        </button>
+      </section>
+
+      <!-- Validation Error Banner -->
+      <div id="setup-error" class="hidden text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 px-3.5 py-2.5 rounded-lg"></div>
+    </form>
+  </main>
+
+  <!-- ==================== 2. ACTIVE GAMEPLAY SCREEN ==================== -->
+  <section id="game-screen" class="hidden flex-1 flex flex-col justify-between w-full">
+    <!-- Top HUD Status Bar -->
+    <header class="w-full max-w-5xl mx-auto px-4 sm:px-8 pt-5 pb-3 flex flex-wrap items-center justify-between gap-3 text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 tabular-nums">
+      <div class="flex items-center gap-3">
+        <div>
+          Seconds left: <span id="timer-display" class="font-mono font-bold text-slate-900 dark:text-white">120</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5 sm:gap-4">
+        <!-- Streak / Combo Pill -->
+        <div id="streak-badge" class="hidden items-center gap-1 text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-full bg-orange-500/15 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30">
+          <span>Streak: <span id="streak-count" class="font-mono font-bold">0</span>🔥</span>
+        </div>
+
+        <!-- Live Personal Best Indicator -->
+        <span id="game-best-badge" class="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 px-2.5 py-1 rounded-md">
+          Best: —
+        </span>
+
+        <!-- Live Score -->
+        <div class="bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 px-3 py-1 rounded-md shadow-2xs">
+          Score: <span id="score-display" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Centered Tactile Problem Stage -->
+    <div class="w-full my-auto py-6 px-3 sm:px-6">
+      <div id="problem-banner" class="relative w-full max-w-4xl mx-auto bg-zetabanner dark:bg-slate-900/95 border border-slate-300/90 dark:border-slate-800 rounded-2xl shadow-lg dark:shadow-[0_18px_50px_-12px_rgba(0,0,0,0.65)] overflow-hidden transition-colors">
+        <!-- Smooth Countdown Progress Bar along top edge -->
+        <div class="w-full h-1.5 bg-slate-300/70 dark:bg-slate-800 overflow-hidden">
+          <div id="time-progress-bar" class="h-full w-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-[width] duration-200 ease-linear"></div>
+        </div>
+
+        <div class="py-8 sm:py-11 px-4 sm:px-8 flex flex-col items-center justify-center relative">
+          <!-- Floating +1 / Speed Indicator Anchor -->
+          <div id="floating-feedback-layer" class="pointer-events-none absolute top-3 right-5 sm:right-8 h-7 flex items-center justify-end"></div>
+
+          <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-5">
+            <div id="problem-text" class="font-mono text-3xl sm:text-5xl font-semibold tracking-tight text-slate-900 dark:text-white tabular-nums select-none text-right">
+              12 + 34 =
+            </div>
+            <input
+              type="text"
+              id="answer-input"
+              inputmode="text"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="Answer"
+              class="w-36 sm:w-52 px-3.5 py-2 sm:py-2.5 font-mono text-3xl sm:text-5xl font-semibold text-slate-900 dark:text-white bg-white dark:bg-slate-950 border-2 border-slate-400 dark:border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/15 tabular-nums transition-all shadow-inner"
+            />
+          </div>
+
+          <!-- Subtle dynamic format hint (shown during fraction questions) -->
+          <div id="problem-hint" class="h-5 mt-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium tracking-wide"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtle Footer Controls -->
+    <footer class="w-full max-w-5xl mx-auto px-5 sm:px-8 pb-6 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+      <div class="flex items-center gap-4">
+        <button type="button" id="skip-btn" class="hover:text-slate-900 dark:hover:text-white underline underline-offset-2 cursor-pointer transition-colors" title="Shortcut: Tab or Escape">
+          Skip problem <span class="text-slate-400 dark:text-slate-500 hidden sm:inline">(Tab / Esc)</span>
+        </button>
+        <span class="text-slate-300 dark:text-slate-700">|</span>
+        <button type="button" id="restart-btn" class="hover:text-slate-900 dark:hover:text-white underline underline-offset-2 cursor-pointer transition-colors">
+          Restart
+        </button>
+      </div>
+      <div>
+        <button type="button" id="change-settings-btn" class="hover:text-slate-900 dark:hover:text-white underline underline-offset-2 cursor-pointer transition-colors">
+          Change settings
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ==================== 3. END-OF-GAME SUMMARY SCREEN ==================== -->
+  <section id="summary-screen" class="hidden flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
+    <div class="bg-white/95 dark:bg-slate-900/90 backdrop-blur-xs border border-slate-200 dark:border-slate-800 rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div>
+          <p class="text-xs font-mono font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Session Complete</p>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mt-1 tabular-nums">
+            Score: <span id="final-score">0</span>
+          </h2>
+        </div>
+        <div id="new-record-badge" class="hidden self-start sm:self-center px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-600/70 text-xs font-bold shadow-xs">
+          🏆 NEW BEST!
+        </div>
+      </div>
+
+      <!-- Key Metrics Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div class="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 sm:p-3.5">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Speed</div>
+          <div id="stat-ppm" class="font-mono text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">0.0</div>
+          <div class="text-[11px] text-slate-400 dark:text-slate-500">problems / min</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 sm:p-3.5">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Avg Pace</div>
+          <div id="stat-avg-pace" class="font-mono text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">—</div>
+          <div class="text-[11px] text-slate-400 dark:text-slate-500">sec / problem</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 sm:p-3.5">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Best Streak</div>
+          <div id="stat-best-streak" class="font-mono text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1 tabular-nums">0</div>
+          <div id="stat-skips" class="text-[11px] text-slate-400 dark:text-slate-500">0 skips</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 rounded-xl p-3 sm:p-3.5">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Personal Best</div>
+          <div id="stat-best" class="font-mono text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 tabular-nums">0</div>
+          <div id="stat-best-dur" class="text-[11px] text-slate-400 dark:text-slate-500">in 120s</div>
+        </div>
+      </div>
+
+      <!-- Visual Breakdown by Operation -->
+      <div class="space-y-2.5">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Breakdown by Operation</h3>
+        <div id="breakdown-list" class="divide-y divide-slate-100 dark:divide-slate-800/90 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden text-sm bg-slate-50/40 dark:bg-slate-950/40">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
+        <button type="button" id="play-again-btn" class="w-full sm:flex-1 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-lg shadow-md shadow-indigo-600/20 transition-all cursor-pointer text-base">
+          Play Again <span class="text-indigo-200 text-xs font-normal ml-1">(Space / Enter)</span>
+        </button>
+        <button type="button" id="summary-settings-btn" class="w-full sm:w-auto px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer text-base">
+          Change Settings
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /**
+     * Mental Math Speed Drill (Calculator Buster)
+     * Supports standard arithmetic, squares/square roots, optional negative numbers,
+     * optional fraction arithmetic, Midnight Jazz / Classic Light themes, and Web Audio cues.
+     */
+    (function () {
+      'use strict';
+
+      const STORAGE_SETTINGS_KEY = 'Arithmetic_plus_settings_v1';
+      const STORAGE_SCORES_KEY = 'Arithmetic_plus_bests_v1';
+      const STORAGE_UI_KEY = 'Arithmetic_plus_ui_v1';
+
+      const DEFAULT_SETTINGS = {
+        addEnabled: true,
+        addMin1: 2,
+        addMax1: 100,
+        addMin2: 2,
+        addMax2: 100,
+        subEnabled: true,
+        mulEnabled: true,
+        mulMin1: 2,
+        mulMax1: 12,
+        mulMin2: 2,
+        mulMax2: 12,
+        divEnabled: true,
+        sqEnabled: true,
+        sqMin: 2,
+        sqMax: 25,
+        sqrtEnabled: false,
+        negativesEnabled: false,
+        fractionsEnabled: false,
+        fracMaxDenom: 12,
+        durationPreset: '120',
+        customDuration: 90
+      };
+
+      // Application State
+      let settings = { ...DEFAULT_SETTINGS };
+      let uiPrefs = { theme: 'light', sound: true };
+      let gameState = {
+        active: false,
+        score: 0,
+        skips: 0,
+        streak: 0,
+        bestStreak: 0,
+        timeLeft: 120,
+        totalDuration: 120,
+        timerId: null,
+        endTimestamp: 0,
+        problemStartTimestamp: 0,
+        currentProblem: null,
+        lastSignature: '',
+        statsByOp: {}
+      };
+
+      // DOM References
+      const els = {
+        setupScreen: document.getElementById('setup-screen'),
+        gameScreen: document.getElementById('game-screen'),
+        summaryScreen: document.getElementById('summary-screen'),
+        settingsForm: document.getElementById('settings-form'),
+        setupError: document.getElementById('setup-error'),
+
+        // Theme & Sound Controls
+        themeToggleBtn: document.getElementById('theme-toggle-btn'),
+        themeIconSun: document.getElementById('theme-icon-sun'),
+        themeIconMoon: document.getElementById('theme-icon-moon'),
+        themeLabel: document.getElementById('theme-label'),
+        soundToggleBtn: document.getElementById('sound-toggle-btn'),
+        soundIconOff: document.getElementById('sound-icon-off'),
+        soundIconOn: document.getElementById('sound-icon-on'),
+        soundLabel: document.getElementById('sound-label'),
+
+        // High Score Badge & Reset Controls
+        bestScoreBadge: document.getElementById('best-score-badge'),
+        bestScoreText: document.getElementById('best-score-text'),
+        resetScoresBtn: document.getElementById('reset-scores-btn'),
+        resetScoresConfirmGroup: document.getElementById('reset-scores-confirm-group'),
+        confirmResetScoresBtn: document.getElementById('confirm-reset-scores-btn'),
+        cancelResetScoresBtn: document.getElementById('cancel-reset-scores-btn'),
+
+        // Settings Inputs
+        opAdd: document.getElementById('op-add'),
+        addMin1: document.getElementById('add-min1'),
+        addMax1: document.getElementById('add-max1'),
+        addMin2: document.getElementById('add-min2'),
+        addMax2: document.getElementById('add-max2'),
+        rangeAdd: document.getElementById('range-add'),
+
+        opSub: document.getElementById('op-sub'),
+
+        opMul: document.getElementById('op-mul'),
+        mulMin1: document.getElementById('mul-min1'),
+        mulMax1: document.getElementById('mul-max1'),
+        mulMin2: document.getElementById('mul-min2'),
+        mulMax2: document.getElementById('mul-max2'),
+        rangeMul: document.getElementById('range-mul'),
+
+        opDiv: document.getElementById('op-div'),
+
+        opSq: document.getElementById('op-sq'),
+        sqMin: document.getElementById('sq-min'),
+        sqMax: document.getElementById('sq-max'),
+        opSqrt: document.getElementById('op-sqrt'),
+        rangeSq: document.getElementById('range-sq'),
+
+        modNegatives: document.getElementById('mod-negatives'),
+        modFractions: document.getElementById('mod-fractions'),
+        fracMaxDenom: document.getElementById('frac-max-denom'),
+        fractionSettings: document.getElementById('fraction-settings'),
+
+        durationSelect: document.getElementById('duration-select'),
+        customDurationWrap: document.getElementById('custom-duration-wrap'),
+        customDurationInput: document.getElementById('custom-duration-input'),
+        resetDefaultsBtn: document.getElementById('reset-defaults-btn'),
+
+        // Gameplay Elements
+        timerDisplay: document.getElementById('timer-display'),
+        scoreDisplay: document.getElementById('score-display'),
+        gameBestBadge: document.getElementById('game-best-badge'),
+        streakBadge: document.getElementById('streak-badge'),
+        streakCount: document.getElementById('streak-count'),
+        problemBanner: document.getElementById('problem-banner'),
+        timeProgressBar: document.getElementById('time-progress-bar'),
+        floatingFeedbackLayer: document.getElementById('floating-feedback-layer'),
+        problemText: document.getElementById('problem-text'),
+        answerInput: document.getElementById('answer-input'),
+        problemHint: document.getElementById('problem-hint'),
+        skipBtn: document.getElementById('skip-btn'),
+        restartBtn: document.getElementById('restart-btn'),
+        changeSettingsBtn: document.getElementById('change-settings-btn'),
+
+        // Summary Elements
+        finalScore: document.getElementById('final-score'),
+        newRecordBadge: document.getElementById('new-record-badge'),
+        statPpm: document.getElementById('stat-ppm'),
+        statAvgPace: document.getElementById('stat-avg-pace'),
+        statBestStreak: document.getElementById('stat-best-streak'),
+        statSkips: document.getElementById('stat-skips'),
+        statBest: document.getElementById('stat-best'),
+        statBestDur: document.getElementById('stat-best-dur'),
+        breakdownList: document.getElementById('breakdown-list'),
+        playAgainBtn: document.getElementById('play-again-btn'),
+        summarySettingsBtn: document.getElementById('summary-settings-btn')
+      };
+
+      /* ==================== WEB AUDIO API SYNTHESIZER ==================== */
+      let audioCtx = null;
+
+      function ensureAudioContext() {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      }
+
+      function playSound(type) {
+        if (!uiPrefs.sound) return;
+        try {
+          ensureAudioContext();
+          if (!audioCtx) return;
+
+          const now = audioCtx.currentTime;
+
+          if (type === 'solve') {
+            // Crisp tactile woodblock/marimba pop
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            const pitchBoost = Math.min(gameState.streak, 20) * 14;
+            osc.frequency.setValueAtTime(520 + pitchBoost, now);
+            osc.frequency.exponentialRampToValueAtTime(780 + pitchBoost, now + 0.055);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else if (type === 'tick') {
+            // Gentle metronome tick for final 5 seconds
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(880, now);
+            gain.gain.setValueAtTime(0.045, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.045);
+          } else if (type === 'record') {
+            // Warm jazzy major-9th arpeggiated chord on new high score
+            const freqs = [523.25, 659.25, 783.99, 987.77, 1174.66]; // C5, E5, G5, B5, D6
+            freqs.forEach((freq, idx) => {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.type = 'sine';
+              const t = now + idx * 0.055;
+              osc.frequency.setValueAtTime(freq, t);
+              gain.gain.setValueAtTime(0.001, t);
+              gain.gain.linearRampToValueAtTime(0.06, t + 0.02);
+              gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.45);
+
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.start(t);
+              osc.stop(t + 0.46);
+            });
+          } else if (type === 'finish') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(330, now + 0.18);
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.21);
+          }
+        } catch (e) {
+          // Ignore audio restrictions silently
+        }
+      }
+
+      /* ==================== THEME & UI PREFERENCES ==================== */
+      function loadUiPrefs() {
+        try {
+          const raw = localStorage.getItem(STORAGE_UI_KEY);
+          if (raw) {
+            uiPrefs = { ...uiPrefs, ...JSON.parse(raw) };
+          }
+        } catch (e) {
+          // Fallback to defaults
+        }
+        applyUiPrefs();
+      }
+
+      function saveUiPrefs() {
+        try {
+          localStorage.setItem(STORAGE_UI_KEY, JSON.stringify(uiPrefs));
+        } catch (e) {
+          // Ignore storage quota errors
+        }
+      }
+
+      function applyUiPrefs() {
+        const isDark = uiPrefs.theme === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
+
+        els.themeIconSun.classList.toggle('hidden', !isDark);
+        els.themeIconMoon.classList.toggle('hidden', isDark);
+        els.themeLabel.textContent = isDark ? 'Midnight Jazz' : 'Classic Light';
+
+        els.soundIconOn.classList.toggle('hidden', !uiPrefs.sound);
+        els.soundIconOff.classList.toggle('hidden', uiPrefs.sound);
+        els.soundLabel.textContent = uiPrefs.sound ? 'Sound On' : 'Sound Off';
+      }
+
+      /* ==================== MATH & FRACTION UTILITIES ==================== */
+      function randInt(min, max) {
+        const lo = Math.min(min, max);
+        const hi = Math.max(min, max);
+        return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+      }
+
+      function gcd(a, b) {
+        let x = Math.abs(Math.round(a));
+        let y = Math.abs(Math.round(b));
+        while (y !== 0) {
+          const t = y;
+          y = x % y;
+          x = t;
+        }
+        return x || 1;
+      }
+
+      function simplifyFraction(num, den) {
+        if (den === 0) return { n: 0, d: 1 };
+        if (den < 0) {
+          num = -num;
+          den = -den;
+        }
+        if (num === 0) return { n: 0, d: 1 };
+        const divisor = gcd(num, den);
+        return { n: num / divisor, d: den / divisor };
+      }
+
+      function formatOperand(val, isFirst) {
+        if (typeof val === 'string') {
+          if (!isFirst && val.startsWith('-')) return `(${val})`;
+          return val;
+        }
+        if (!isFirst && val < 0) return `(${val})`;
+        return String(val);
+      }
+
+      function formatFractionString(frac) {
+        const s = simplifyFraction(frac.n, frac.d);
+        return s.d === 1 ? String(s.n) : `${s.n}/${s.d}`;
+      }
+
+      /* ==================== PROBLEM GENERATORS ==================== */
+      function generateIntegerAddition() {
+        let a = randInt(settings.addMin1, settings.addMax1);
+        let b = randInt(settings.addMin2, settings.addMax2);
+        if (settings.negativesEnabled) {
+          if (Math.random() < 0.45) a = -a;
+          if (Math.random() < 0.45) b = -b;
+        }
+        const ans = a + b;
+        return {
+          opKey: 'add',
+          opLabel: 'Addition',
+          prompt: `${formatOperand(a, true)} + ${formatOperand(b, false)} =`,
+          type: 'int',
+          answer: ans,
+          hint: ''
+        };
+      }
+
+      function generateIntegerSubtraction() {
+        let x = randInt(settings.addMin1, settings.addMax1);
+        let y = randInt(settings.addMin2, settings.addMax2);
+        if (settings.negativesEnabled) {
+          if (Math.random() < 0.45) x = -x;
+          if (Math.random() < 0.45) y = -y;
+          return {
+            opKey: 'sub',
+            opLabel: 'Subtraction',
+            prompt: `${formatOperand(x, true)} − ${formatOperand(y, false)} =`,
+            type: 'int',
+            answer: x - y,
+            hint: ''
+          };
+        }
+        const sum = x + y;
+        return {
+          opKey: 'sub',
+          opLabel: 'Subtraction',
+          prompt: `${sum} − ${x} =`,
+          type: 'int',
+          answer: y,
+          hint: ''
+        };
+      }
+
+      function generateIntegerMultiplication() {
+        let a = randInt(settings.mulMin1, settings.mulMax1);
+        let b = randInt(settings.mulMin2, settings.mulMax2);
+        if (settings.negativesEnabled) {
+          if (Math.random() < 0.45) a = -a;
+          if (Math.random() < 0.45) b = -b;
+        }
+        return {
+          opKey: 'mul',
+          opLabel: 'Multiplication',
+          prompt: `${formatOperand(a, true)} × ${formatOperand(b, false)} =`,
+          type: 'int',
+          answer: a * b,
+          hint: ''
+        };
+      }
+
+      function generateIntegerDivision() {
+        let divisor = randInt(settings.mulMin1, settings.mulMax1);
+        let quotient = randInt(settings.mulMin2, settings.mulMax2);
+        if (divisor === 0) divisor = 2;
+        if (settings.negativesEnabled) {
+          if (Math.random() < 0.45) divisor = -divisor;
+          if (Math.random() < 0.45) quotient = -quotient;
+        }
+        const dividend = divisor * quotient;
+        return {
+          opKey: 'div',
+          opLabel: 'Division',
+          prompt: `${formatOperand(dividend, true)} ÷ ${formatOperand(divisor, false)} =`,
+          type: 'int',
+          answer: quotient,
+          hint: ''
+        };
+      }
+
+      function generateSquareProblem() {
+        let base = randInt(settings.sqMin, settings.sqMax);
+        const canSqrt = settings.sqrtEnabled && base >= 0;
+        const doSqrt = canSqrt && Math.random() < 0.42;
+
+        if (doSqrt) {
+          const sqVal = base * base;
+          return {
+            opKey: 'sq',
+            opLabel: 'Squares & Roots',
+            prompt: `√${sqVal} =`,
+            type: 'int',
+            answer: base,
+            hint: ''
+          };
+        }
+
+        if (settings.negativesEnabled && Math.random() < 0.35 && base !== 0) {
+          base = -base;
+          return {
+            opKey: 'sq',
+            opLabel: 'Squares & Roots',
+            prompt: `(${base})² =`,
+            type: 'int',
+            answer: base * base,
+            hint: ''
+          };
+        }
+
+        return {
+          opKey: 'sq',
+          opLabel: 'Squares & Roots',
+          prompt: `${base}² =`,
+          type: 'int',
+          answer: base * base,
+          hint: ''
+        };
+      }
+
+      function generateFractionProblem(opKey) {
+        const maxD = Math.max(2, Math.min(50, settings.fracMaxDenom || 12));
+
+        function pickFraction(allowZero) {
+          for (let tries = 0; tries < 20; tries++) {
+            const d = randInt(2, maxD);
+            let n = randInt(1, d * 2 - 1);
+            if (n % d === 0) continue;
+            if (settings.negativesEnabled && Math.random() < 0.4) {
+              n = -n;
+            }
+            const s = simplifyFraction(n, d);
+            if (s.d > 1 && (allowZero || s.n !== 0)) return s;
+          }
+          return { n: 1, d: 2 };
+        }
+
+        if (opKey === 'sq') {
+          const d = randInt(2, Math.min(maxD, 15));
+          let n = randInt(1, d - 1);
+          if (settings.negativesEnabled && Math.random() < 0.35) n = -n;
+          const base = simplifyFraction(n, d);
+          const ans = simplifyFraction(base.n * base.n, base.d * base.d);
+          return {
+            opKey: 'sq',
+            opLabel: 'Squares & Roots',
+            prompt: `(${formatFractionString(base)})² =`,
+            type: 'frac',
+            answer: ans,
+            hint: 'Enter as a/b'
+          };
+        }
+
+        let f1 = pickFraction(false);
+        let f2 = pickFraction(false);
+
+        if ((opKey === 'add' || opKey === 'sub') && Math.random() < 0.55) {
+          const commonD = randInt(2, maxD);
+          let n1 = randInt(1, commonD * 2 - 1);
+          let n2 = randInt(1, commonD * 2 - 1);
+          if (settings.negativesEnabled) {
+            if (Math.random() < 0.4) n1 = -n1;
+            if (Math.random() < 0.4) n2 = -n2;
+          }
+          f1 = simplifyFraction(n1, commonD);
+          f2 = simplifyFraction(n2, commonD);
+        }
+
+        let ans;
+        let symbol = '+';
+        let label = 'Addition';
+
+        if (opKey === 'add') {
+          symbol = '+';
+          label = 'Addition';
+          ans = simplifyFraction(f1.n * f2.d + f2.n * f1.d, f1.d * f2.d);
+        } else if (opKey === 'sub') {
+          symbol = '−';
+          label = 'Subtraction';
+          if (!settings.negativesEnabled && f1.n * f2.d < f2.n * f1.d) {
+            const tmp = f1;
+            f1 = f2;
+            f2 = tmp;
+          }
+          ans = simplifyFraction(f1.n * f2.d - f2.n * f1.d, f1.d * f2.d);
+        } else if (opKey === 'mul') {
+          symbol = '×';
+          label = 'Multiplication';
+          ans = simplifyFraction(f1.n * f2.n, f1.d * f2.d);
+        } else {
+          symbol = '÷';
+          label = 'Division';
+          ans = simplifyFraction(f1.n * f2.d, f1.d * f2.n);
+        }
+
+        const s1 = formatFractionString(f1);
+        const s2 = formatFractionString(f2);
+        const isWhole = ans.d === 1;
+
+        return {
+          opKey,
+          opLabel: label,
+          prompt: `${formatOperand(s1, true)} ${symbol} ${formatOperand(s2, false)} =`,
+          type: 'frac',
+          answer: ans,
+          hint: isWhole ? '' : 'Enter as a/b (e.g. 3/4)'
+        };
+      }
+
+      function generateNextProblem() {
+        const enabledOps = [];
+        if (settings.addEnabled) enabledOps.push('add');
+        if (settings.subEnabled) enabledOps.push('sub');
+        if (settings.mulEnabled) enabledOps.push('mul');
+        if (settings.divEnabled) enabledOps.push('div');
+        if (settings.sqEnabled) enabledOps.push('sq');
+
+        if (enabledOps.length === 0) {
+          enabledOps.push('add');
+        }
+
+        let candidate = null;
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const opKey = enabledOps[randInt(0, enabledOps.length - 1)];
+          const useFraction = settings.fractionsEnabled && Math.random() < 0.38;
+
+          if (useFraction) {
+            candidate = generateFractionProblem(opKey);
+          } else {
+            switch (opKey) {
+              case 'add': candidate = generateIntegerAddition(); break;
+              case 'sub': candidate = generateIntegerSubtraction(); break;
+              case 'mul': candidate = generateIntegerMultiplication(); break;
+              case 'div': candidate = generateIntegerDivision(); break;
+              case 'sq':  candidate = generateSquareProblem(); break;
+            }
+          }
+
+          if (candidate.prompt !== gameState.lastSignature) {
+            break;
+          }
+        }
+
+        gameState.lastSignature = candidate.prompt;
+        return candidate;
+      }
+
+      /* ==================== ZERO-LATENCY ANSWER EVALUATION ==================== */
+      function checkAnswerMatch(rawInput, problem) {
+        const trimmed = rawInput.trim();
+        if (!trimmed) return false;
+
+        if (trimmed === '-' || trimmed === '+' || trimmed === '.' || trimmed === '-.') {
+          return false;
+        }
+        if (trimmed.endsWith('/')) {
+          return false;
+        }
+
+        if (problem.type === 'int') {
+          if (!/^[+-]?\d+$/.test(trimmed)) return false;
+          const parsed = Number(trimmed);
+          return parsed === problem.answer;
+        }
+
+        if (problem.type === 'frac') {
+          const target = simplifyFraction(problem.answer.n, problem.answer.d);
+
+          if (trimmed.includes('/')) {
+            const parts = trimmed.split('/');
+            if (parts.length !== 2) return false;
+            const numStr = parts[0].trim();
+            const denStr = parts[1].trim();
+            if (!/^[+-]?\d+$/.test(numStr) || !/^[+-]?\d+$/.test(denStr)) return false;
+            const num = Number(numStr);
+            const den = Number(denStr);
+            if (den === 0) return false;
+            const userSimp = simplifyFraction(num, den);
+            return userSimp.n === target.n && userSimp.d === target.d;
+          }
+
+          if (/^[+-]?\d+$/.test(trimmed)) {
+            const val = Number(trimmed);
+            return target.d === 1 && val === target.n;
+          }
+
+          if (/^[+-]?(\d+\.\d+|\.\d+)$/.test(trimmed)) {
+            const decPart = trimmed.split('.')[1];
+            if (decPart && decPart.length >= 2) {
+              const floatVal = Number(trimmed);
+              const targetFloat = target.n / target.d;
+              return Math.abs(floatVal - targetFloat) < 1e-4;
+            }
+          }
+        }
+
+        return false;
+      }
+
+      /* ==================== SETTINGS & STORAGE ==================== */
+      function readSettingsFromUI() {
+        const parseNum = (el, fallback) => {
+          const v = parseInt(el.value, 10);
+          return Number.isFinite(v) ? v : fallback;
+        };
+
+        return {
+          addEnabled: els.opAdd.checked,
+          addMin1: parseNum(els.addMin1, 2),
+          addMax1: parseNum(els.addMax1, 100),
+          addMin2: parseNum(els.addMin2, 2),
+          addMax2: parseNum(els.addMax2, 100),
+          subEnabled: els.opSub.checked,
+          mulEnabled: els.opMul.checked,
+          mulMin1: parseNum(els.mulMin1, 2),
+          mulMax1: parseNum(els.mulMax1, 12),
+          mulMin2: parseNum(els.mulMin2, 2),
+          mulMax2: parseNum(els.mulMax2, 12),
+          divEnabled: els.opDiv.checked,
+          sqEnabled: els.opSq.checked,
+          sqMin: parseNum(els.sqMin, 2),
+          sqMax: parseNum(els.sqMax, 25),
+          sqrtEnabled: els.opSqrt.checked,
+          negativesEnabled: els.modNegatives.checked,
+          fractionsEnabled: els.modFractions.checked,
+          fracMaxDenom: Math.max(2, Math.min(50, parseNum(els.fracMaxDenom, 12))),
+          durationPreset: els.durationSelect.value,
+          customDuration: Math.max(5, Math.min(3600, parseNum(els.customDurationInput, 90)))
+        };
+      }
+
+      function applySettingsToUI(s) {
+        els.opAdd.checked = s.addEnabled;
+        els.addMin1.value = s.addMin1;
+        els.addMax1.value = s.addMax1;
+        els.addMin2.value = s.addMin2;
+        els.addMax2.value = s.addMax2;
+
+        els.opSub.checked = s.subEnabled;
+
+        els.opMul.checked = s.mulEnabled;
+        els.mulMin1.value = s.mulMin1;
+        els.mulMax1.value = s.mulMax1;
+        els.mulMin2.value = s.mulMin2;
+        els.mulMax2.value = s.mulMax2;
+
+        els.opDiv.checked = s.divEnabled;
+
+        els.opSq.checked = s.sqEnabled;
+        els.sqMin.value = s.sqMin;
+        els.sqMax.value = s.sqMax;
+        els.opSqrt.checked = s.sqrtEnabled;
+
+        els.modNegatives.checked = s.negativesEnabled;
+        els.modFractions.checked = s.fractionsEnabled;
+        els.fracMaxDenom.value = s.fracMaxDenom;
+
+        els.durationSelect.value = s.durationPreset;
+        els.customDurationInput.value = s.customDuration;
+
+        syncRangeVisibility();
+        updateHighScoreBadges();
+      }
+
+      function syncRangeVisibility() {
+        els.rangeAdd.style.opacity = els.opAdd.checked ? '1' : '0.42';
+        els.rangeMul.style.opacity = els.opMul.checked ? '1' : '0.42';
+        els.rangeSq.style.opacity = els.opSq.checked ? '1' : '0.42';
+        els.fractionSettings.style.opacity = els.modFractions.checked ? '1' : '0.42';
+
+        if (els.durationSelect.value === 'custom') {
+          els.customDurationWrap.classList.remove('hidden');
+          els.customDurationWrap.classList.add('inline-flex');
+        } else {
+          els.customDurationWrap.classList.add('hidden');
+          els.customDurationWrap.classList.remove('inline-flex');
+        }
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+          // Ignore storage quota errors
+        }
+      }
+
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(STORAGE_SETTINGS_KEY);
+          if (raw) {
+            settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+          }
+        } catch (e) {
+          settings = { ...DEFAULT_SETTINGS };
+        }
+        applySettingsToUI(settings);
+      }
+
+      function getDurationSeconds(s) {
+        if (s.durationPreset === 'custom') {
+          return Math.max(5, Math.min(3600, s.customDuration || 90));
+        }
+        return parseInt(s.durationPreset, 10) || 120;
+      }
+
+      function getBestScoreKey(s, durationSec) {
+        const modeTag = [
+          s.negativesEnabled ? 'neg' : 'pos',
+          s.fractionsEnabled ? 'frac' : 'int'
+        ].join('_');
+        return `${durationSec}s_${modeTag}`;
+      }
+
+      function getBestRecordForCurrentSettings() {
+        const liveSettings = readSettingsFromUI();
+        const dur = getDurationSeconds(liveSettings);
+        const key = getBestScoreKey(liveSettings, dur);
+        try {
+          const store = JSON.parse(localStorage.getItem(STORAGE_SCORES_KEY) || '{}');
+          return {
+            dur,
+            key,
+            record: store[key] || null,
+            hasAnyScores: Object.keys(store).length > 0
+          };
+        } catch (e) {
+          return { dur, key, record: null, hasAnyScores: false };
+        }
+      }
+
+      function updateHighScoreBadges() {
+        const { dur, record, hasAnyScores } = getBestRecordForCurrentSettings();
+
+        if (record && typeof record.bestScore === 'number') {
+          const ppmSuffix = typeof record.bestPpm === 'number' ? ` (${record.bestPpm} PPM)` : '';
+          els.bestScoreText.textContent = `Best (${dur}s): ${record.bestScore}${ppmSuffix}`;
+          els.gameBestBadge.textContent = `Best: ${record.bestScore}`;
+        } else {
+          els.bestScoreText.textContent = `Best (${dur}s): —`;
+          els.gameBestBadge.textContent = 'Best: —';
+        }
+
+        els.resetScoresBtn.classList.toggle('opacity-50', !hasAnyScores);
+      }
+
+      function resetAllHighScores() {
+        try {
+          localStorage.removeItem(STORAGE_SCORES_KEY);
+        } catch (e) {
+          // Ignore storage errors
+        }
+        hideResetScoresConfirm();
+        updateHighScoreBadges();
+      }
+
+      function showResetScoresConfirm() {
+        els.resetScoresBtn.classList.add('hidden');
+        els.resetScoresConfirmGroup.classList.remove('hidden');
+        els.resetScoresConfirmGroup.classList.add('inline-flex');
+      }
+
+      function hideResetScoresConfirm() {
+        els.resetScoresConfirmGroup.classList.add('hidden');
+        els.resetScoresConfirmGroup.classList.remove('inline-flex');
+        els.resetScoresBtn.classList.remove('hidden');
+      }
+
+      function recordHighScore(durationSec, score, ppm) {
+        const key = getBestScoreKey(settings, durationSec);
+        let store = {};
+        try {
+          store = JSON.parse(localStorage.getItem(STORAGE_SCORES_KEY) || '{}');
+        } catch (e) {
+          store = {};
+        }
+
+        const prev = store[key]?.bestScore || 0;
+        const isNewBest = score > 0 && score > prev;
+        const bestScore = Math.max(prev, score);
+
+        store[key] = {
+          bestScore,
+          bestPpm: isNewBest ? ppm : (store[key]?.bestPpm || ppm),
+          updatedAt: Date.now()
+        };
+
+        try {
+          localStorage.setItem(STORAGE_SCORES_KEY, JSON.stringify(store));
+        } catch (e) {
+          // Ignore storage errors
+        }
+
+        updateHighScoreBadges();
+        return { bestScore, isNewBest };
+      }
+
+      /* ==================== GAMEPLAY LIFECYCLE & FEEDBACK ==================== */
+      function showScreen(screenName) {
+        els.setupScreen.classList.add('hidden');
+        els.gameScreen.classList.add('hidden');
+        els.summaryScreen.classList.add('hidden');
+
+        if (screenName === 'setup') {
+          els.setupScreen.classList.remove('hidden');
+          updateHighScoreBadges();
+        } else if (screenName === 'game') {
+          els.gameScreen.classList.remove('hidden');
+        } else if (screenName === 'summary') {
+          els.summaryScreen.classList.remove('hidden');
+        }
+      }
+
+      function initOpStats() {
+        return {
+          add: { label: 'Addition', solved: 0, skipped: 0 },
+          sub: { label: 'Subtraction', solved: 0, skipped: 0 },
+          mul: { label: 'Multiplication', solved: 0, skipped: 0 },
+          div: { label: 'Division', solved: 0, skipped: 0 },
+          sq:  { label: 'Squares & Roots', solved: 0, skipped: 0 }
+        };
+      }
+
+      function updateStreakDisplay() {
+        if (gameState.streak >= 2) {
+          els.streakCount.textContent = String(gameState.streak);
+          els.streakBadge.classList.remove('hidden');
+          els.streakBadge.classList.add('inline-flex');
+
+          if ([5, 10, 15, 20, 30, 50].includes(gameState.streak)) {
+            els.streakBadge.classList.remove('milestone-pop');
+            void els.streakBadge.offsetWidth;
+            els.streakBadge.classList.add('milestone-pop');
+          }
+        } else {
+          els.streakBadge.classList.add('hidden');
+          els.streakBadge.classList.remove('inline-flex');
+        }
+      }
+
+      function triggerSolveMicroFeedback(solveSeconds) {
+        // 1. Flash emerald border on input and banner
+        els.answerInput.classList.remove('solve-flash');
+        void els.answerInput.offsetWidth;
+        els.answerInput.classList.add('solve-flash');
+
+        els.problemBanner.classList.remove('banner-solve-flash');
+        void els.problemBanner.offsetWidth;
+        els.problemBanner.classList.add('banner-solve-flash');
+
+        // 2. Spawn non-blocking floating +1 and solve speed pill
+        const badge = document.createElement('span');
+        const speedStr = solveSeconds < 10 ? `${solveSeconds.toFixed(1)}s` : '';
+        badge.className = 'float-feedback inline-flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full';
+        badge.textContent = speedStr ? `+1 · ${speedStr}` : '+1';
+
+        els.floatingFeedbackLayer.innerHTML = '';
+        els.floatingFeedbackLayer.appendChild(badge);
+      }
+
+      function updateProgressBar(remainingSec, totalSec) {
+        const pct = Math.max(0, Math.min(100, (remainingSec / totalSec) * 100));
+        els.timeProgressBar.style.width = `${pct}%`;
+
+        if (remainingSec <= 5) {
+          els.timeProgressBar.className = 'h-full bg-rose-500 transition-[width] duration-200 ease-linear';
+        } else if (remainingSec <= 12) {
+          els.timeProgressBar.className = 'h-full bg-amber-400 transition-[width] duration-200 ease-linear';
+        } else {
+          els.timeProgressBar.className = 'h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-[width] duration-200 ease-linear';
+        }
+      }
+
+      function presentNewProblem() {
+        const prob = generateNextProblem();
+        gameState.currentProblem = prob;
+        gameState.problemStartTimestamp = performance.now();
+        els.problemText.textContent = prob.prompt;
+        els.problemHint.textContent = prob.hint || '';
+        els.answerInput.value = '';
+        els.answerInput.focus();
+      }
+
+      function startGame() {
+        settings = readSettingsFromUI();
+
+        if (!settings.addEnabled && !settings.subEnabled && !settings.mulEnabled && !settings.divEnabled && !settings.sqEnabled) {
+          els.setupError.textContent = 'Please select at least one operation before starting.';
+          els.setupError.classList.remove('hidden');
+          return;
+        }
+        els.setupError.classList.add('hidden');
+
+        saveSettings();
+        updateHighScoreBadges();
+        ensureAudioContext();
+
+        if (gameState.timerId) {
+          clearInterval(gameState.timerId);
+        }
+
+        const totalSec = getDurationSeconds(settings);
+        gameState = {
+          active: true,
+          score: 0,
+          skips: 0,
+          streak: 0,
+          bestStreak: 0,
+          timeLeft: totalSec,
+          totalDuration: totalSec,
+          timerId: null,
+          endTimestamp: Date.now() + totalSec * 1000,
+          problemStartTimestamp: performance.now(),
+          currentProblem: null,
+          lastSignature: '',
+          statsByOp: initOpStats()
+        };
+
+        els.timerDisplay.textContent = String(totalSec);
+        els.timerDisplay.classList.remove('text-rose-600', 'dark:text-rose-400');
+        els.scoreDisplay.textContent = '0';
+        els.floatingFeedbackLayer.innerHTML = '';
+        updateStreakDisplay();
+        updateProgressBar(totalSec, totalSec);
+
+        showScreen('game');
+        presentNewProblem();
+
+        gameState.timerId = setInterval(() => {
+          const remainingMs = gameState.endTimestamp - Date.now();
+          const secLeft = Math.max(0, Math.ceil(remainingMs / 1000));
+
+          if (secLeft !== gameState.timeLeft) {
+            gameState.timeLeft = secLeft;
+            els.timerDisplay.textContent = String(secLeft);
+            updateProgressBar(secLeft, gameState.totalDuration);
+
+            if (secLeft <= 5 && secLeft > 0) {
+              els.timerDisplay.classList.add('text-rose-600', 'dark:text-rose-400');
+              playSound('tick');
+            }
+          }
+
+          if (remainingMs <= 0) {
+            finishGame();
+          }
+        }, 100);
+      }
+
+      function handleCorrectAnswer() {
+        const nowPerf = performance.now();
+        const solveSec = Math.max(0.05, (nowPerf - gameState.problemStartTimestamp) / 1000);
+
+        gameState.score += 1;
+        gameState.streak += 1;
+        if (gameState.streak > gameState.bestStreak) {
+          gameState.bestStreak = gameState.streak;
+        }
+
+        els.scoreDisplay.textContent = String(gameState.score);
+        updateStreakDisplay();
+
+        const opKey = gameState.currentProblem.opKey;
+        if (gameState.statsByOp[opKey]) {
+          gameState.statsByOp[opKey].solved += 1;
+        }
+
+        playSound('solve');
+        triggerSolveMicroFeedback(solveSec);
+        presentNewProblem();
+      }
+
+      function skipCurrentProblem() {
+        if (!gameState.active) return;
+        gameState.skips += 1;
+        gameState.streak = 0;
+        updateStreakDisplay();
+
+        const opKey = gameState.currentProblem.opKey;
+        if (gameState.statsByOp[opKey]) {
+          gameState.statsByOp[opKey].skipped += 1;
+        }
+        presentNewProblem();
+      }
+
+      function finishGame() {
+        if (!gameState.active) return;
+        gameState.active = false;
+        if (gameState.timerId) {
+          clearInterval(gameState.timerId);
+          gameState.timerId = null;
+        }
+
+        const durationSec = gameState.totalDuration;
+        const score = gameState.score;
+        const skips = gameState.skips;
+        const ppm = Number(((score / durationSec) * 60).toFixed(1));
+        const avgPace = score > 0 ? `${(durationSec / score).toFixed(2)}s` : '—';
+
+        const { bestScore, isNewBest } = recordHighScore(durationSec, score, ppm);
+
+        if (isNewBest) {
+          playSound('record');
+        } else {
+          playSound('finish');
+        }
+
+        // Populate Summary Screen
+        els.finalScore.textContent = String(score);
+        els.statPpm.textContent = ppm.toFixed(1);
+        els.statAvgPace.textContent = avgPace;
+        els.statBestStreak.textContent = String(gameState.bestStreak);
+        els.statSkips.textContent = `${skips} ${skips === 1 ? 'skip' : 'skips'}`;
+        els.statBest.textContent = String(bestScore);
+        els.statBestDur.textContent = `in ${durationSec}s`;
+
+        if (isNewBest) {
+          els.newRecordBadge.classList.remove('hidden');
+        } else {
+          els.newRecordBadge.classList.add('hidden');
+        }
+
+        // Populate Per-Operation Breakdown with Visual Progress Bars
+        els.breakdownList.innerHTML = '';
+        const opEntries = Object.values(gameState.statsByOp).filter(
+          (item) => item.solved > 0 || item.skipped > 0
+        );
+
+        if (opEntries.length === 0) {
+          els.breakdownList.innerHTML = `
+            <div class="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs italic">
+              No problems attempted in this round.
+            </div>
+          `;
+        } else {
+          const maxSolved = Math.max(1, ...opEntries.map((item) => item.solved));
+          opEntries.forEach((item) => {
+            const totalAttempted = item.solved + item.skipped;
+            const accPct = totalAttempted > 0 ? Math.round((item.solved / totalAttempted) * 100) : 100;
+            const barWidthPct = Math.round((item.solved / maxSolved) * 100);
+
+            const row = document.createElement('div');
+            row.className = 'px-4 py-3 space-y-1.5';
+            row.innerHTML = `
+              <div class="flex items-center justify-between text-xs sm:text-sm">
+                <span class="font-medium text-slate-800 dark:text-slate-200">${item.label}</span>
+                <div class="flex items-center gap-3 tabular-nums font-mono text-xs">
+                  <span class="font-bold text-slate-900 dark:text-white">${item.solved} solved</span>
+                  <span class="text-slate-400 dark:text-slate-500">(${accPct}%)</span>
+                  ${item.skipped > 0 ? `<span class="text-amber-600 dark:text-amber-400">${item.skipped} skipped</span>` : ''}
+                </div>
+              </div>
+              <div class="w-full h-1.5 bg-slate-200/80 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-500" style="width: ${barWidthPct}%"></div>
+              </div>
+            `;
+            els.breakdownList.appendChild(row);
+          });
+        }
+
+        showScreen('summary');
+        setTimeout(() => els.playAgainBtn.focus(), 50);
+      }
+
+      function returnToSetup() {
+        gameState.active = false;
+        if (gameState.timerId) {
+          clearInterval(gameState.timerId);
+          gameState.timerId = null;
+        }
+        hideResetScoresConfirm();
+        showScreen('setup');
+      }
+
+      /* ==================== EVENT LISTENERS ==================== */
+      els.themeToggleBtn.addEventListener('click', () => {
+        uiPrefs.theme = uiPrefs.theme === 'dark' ? 'light' : 'dark';
+        saveUiPrefs();
+        applyUiPrefs();
+      });
+
+      els.soundToggleBtn.addEventListener('click', () => {
+        uiPrefs.sound = !uiPrefs.sound;
+        saveUiPrefs();
+        applyUiPrefs();
+        if (uiPrefs.sound) {
+          playSound('solve');
+        }
+      });
+
+      els.settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        startGame();
+      });
+
+      [
+        els.opAdd, els.opSub, els.opMul, els.opDiv, els.opSq,
+        els.modNegatives, els.modFractions, els.durationSelect
+      ].forEach((el) => {
+        el.addEventListener('change', () => {
+          syncRangeVisibility();
+          updateHighScoreBadges();
+        });
+      });
+
+      els.customDurationInput.addEventListener('input', updateHighScoreBadges);
+
+      els.resetDefaultsBtn.addEventListener('click', () => {
+        settings = { ...DEFAULT_SETTINGS };
+        applySettingsToUI(settings);
+        saveSettings();
+      });
+
+      els.resetScoresBtn.addEventListener('click', showResetScoresConfirm);
+      els.cancelResetScoresBtn.addEventListener('click', hideResetScoresConfirm);
+      els.confirmResetScoresBtn.addEventListener('click', resetAllHighScores);
+
+      // Zero-latency auto-submit on every input keystroke
+      els.answerInput.addEventListener('input', () => {
+        if (!gameState.active || !gameState.currentProblem) return;
+        const val = els.answerInput.value;
+        if (checkAnswerMatch(val, gameState.currentProblem)) {
+          handleCorrectAnswer();
+        }
+      });
+
+      // Keyboard shortcuts during gameplay (Tab / Escape to skip)
+      els.answerInput.addEventListener('keydown', (e) => {
+        if (!gameState.active) return;
+        if (e.key === 'Tab' || e.key === 'Escape') {
+          e.preventDefault();
+          skipCurrentProblem();
+        }
+      });
+
+      els.skipBtn.addEventListener('click', skipCurrentProblem);
+      els.restartBtn.addEventListener('click', startGame);
+      els.changeSettingsBtn.addEventListener('click', returnToSetup);
+
+      els.playAgainBtn.addEventListener('click', startGame);
+      els.summarySettingsBtn.addEventListener('click', returnToSetup);
+
+      document.addEventListener('keydown', (e) => {
+        if (!els.summaryScreen.classList.contains('hidden')) {
+          if (e.key === ' ' && document.activeElement !== els.playAgainBtn && document.activeElement !== els.summarySettingsBtn) {
+            e.preventDefault();
+            startGame();
+          }
+        }
+      });
+
+      // Initialize application on load
+      loadUiPrefs();
+      loadSettings();
+    })();
+  </script>
+</body>
+</html>

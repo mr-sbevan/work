@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon's Stuff</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background: #0066cc;
+            color: white;
+            padding: 40px 20px;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin-top: 10px;
+            background: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background: #004d99;
+        }
+
+        footer {
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Simon's Stuff</h1>
+    <p>Select a resource below</p>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Gym </h2>
+        <p>Open the gym page</p>
+        <a href="gym.html" class="button">Open Gym Page</a>
+    </div>
+
+    <div class="card">
+        <h2> Arithmetic Game </h2>
+        <p>Open the game page</p>
+        <a href="CalculatorBuster.html" class="button">Arithmetic Game</a>
+    </div>
+    
+    <div class="card">
+        <h2>The Chase</h2>
+        <p>Open the Chase</p>
+        <p>
+        <a href="chase.html" class="button">Open Chase</a>
+        </p>
+        <p>
+                    <a href="chasereadme.html" class="button">Open instructions</a>
+
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Gym Test</h2>
+        <p>Open the beta</p>
+        <a href="betaindex.html" class="button">Open Beta</a>
+    </div>
+
+    <div class="card">
+        <h2>GitHub Repository</h2>
+        <p>View the source code for this project.</p>
+        <a href="https://github.com/d90gecko-spec/Sports"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="button">
+           View Repository
+        </a>
+    </div>
+<script>
+ 
+        // Screen Wake Lock for Pixel 10a
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => {
+                        wakeLock = null;
+                    });
+                } catch (err) {
+                    console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock === null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        window.addEventListener('pointerdown', () => {
+            if (!wakeLock) {
+                requestWakeLock();
+            }
+        }, { once: true });
+</script>
+</main>
+
+<footer>
+    
+</footer>
+
+</body>
+</html>
