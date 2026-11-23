@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classroom Seating Plan Generator — Documentation</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #475569;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --border: #e2e8f0;
+      --code-bg: #f1f5f9;
+      --radius: 12px;
+      --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2.5rem 1.25rem;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: #ffffff;
+      padding: 2.25rem 2.5rem;
+    }
+
+    header .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+
+    header h1 {
+      font-size: 1.95rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      font-size: 1.02rem;
+      color: rgba(255, 255, 255, 0.92);
+      max-width: 68ch;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9em;
+      background: var(--code-bg);
+      color: #0f172a;
+      padding: 0.15rem 0.4rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+
+    header code {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    main {
+      padding: 2.25rem 2.5rem;
+    }
+
+    section {
+      margin-bottom: 2.25rem;
+    }
+
+    section:last-child {
+      margin-bottom: 0;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0f172a;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--accent-soft);
+      margin-bottom: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 1.1em;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    ul.feature-list {
+      list-style: none;
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    ul.feature-list > li {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.95rem 1.15rem;
+    }
+
+    .feature-title {
+      font-weight: 700;
+      color: #0f172a;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .feature-desc {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+    }
+
+    ul.sub-list,
+    ol.step-list {
+      margin-top: 0.55rem;
+      padding-left: 1.4rem;
+      color: var(--text-muted);
+    }
+
+    ul.sub-list li,
+    ol.step-list li {
+      margin-bottom: 0.35rem;
+    }
+
+    ol.main-steps {
+      padding-left: 1.4rem;
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    ol.main-steps > li {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.15rem 0.9rem 0.9rem;
+    }
+
+    ol.main-steps > li::marker {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .step-heading {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .export-list {
+      list-style: none;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .export-list li {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1.1rem;
+      border-radius: 0 8px 8px 0;
+      color: var(--text);
+      font-size: 0.96rem;
+    }
+
+    footer {
+      background: var(--surface-alt);
+      border-top: 1px solid var(--border);
+      padding: 1.1rem 2.5rem;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem 0.6rem;
+      }
+      header,
+      main,
+      footer {
+        padding: 1.4rem 1.25rem;
+      }
+      header h1 {
+        font-size: 1.55rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">Web Application Guide</div>
+      <h1>Classroom Seating Plan Generator</h1>
+      <p>
+        A self-contained, zero-dependency browser web application (<code>seating_plan_generator.html</code>)
+        for creating, customizing, and exporting random classroom seating plans complete with student names and portraits.
+      </p>
+    </header>
+
+    <main>
+      <section id="features">
+        <h2>Features</h2>
+        <ul class="feature-list">
+          <li>
+            <span class="feature-title">PhotoShot .xlsx Import with Photo Extraction</span>
+            <span class="feature-desc">
+              Imports <code>.xlsx</code> spreadsheets containing anchored student images, form/group labels, and student names directly in the browser without external libraries or server uploads.
+            </span>
+          </li>
+          <li>
+            <span class="feature-title">Randomized Demo Class</span>
+            <span class="feature-desc">
+              Generates a fresh set of randomized students with generated portraits so you can test and experiment immediately.
+            </span>
+          </li>
+          <li>
+            <span class="feature-title">Flexible Desk &amp; Row Configuration</span>
+            <ul class="sub-list">
+              <li>Defaults to <strong>3 rows of 4 two-seater desks</strong> (24 seats).</li>
+              <li>Adjust <strong>Rows</strong> and <strong>Desks / Row</strong> independently.</li>
+              <li>Switch between <strong>2-seater desks</strong> and combined <strong>4-seater</strong> or <strong>6-seater</strong> rectangular desk arrangements built from 2-seater units.</li>
+              <li>Choose between <strong>Fill Front Rows First</strong> or <strong>Spread Evenly Across Desks</strong> when randomizing, and toggle <strong>Board Position</strong> between top and bottom.</li>
+            </ul>
+          </li>
+          <li>
+            <span class="feature-title">Interactive Seating Adjustments</span>
+            <ul class="sub-list">
+              <li>Drag and drop student cards between seats or move a student into the <strong>Unseated Pool</strong>.</li>
+              <li>Click two seats to swap students quickly.</li>
+              <li>Mark students <strong>Present</strong> or <strong>Absent</strong> in the sidebar roster, or add students manually.</li>
+            </ul>
+          </li>
+          <li>
+            <span class="feature-title">Excel (.xlsx) Export &amp; Print</span>
+            <ul class="sub-list">
+              <li>Exports a multi-sheet <code>.xlsx</code> workbook featuring a visual <strong>Seating Plan</strong> grid with embedded student photos and a tabular <strong>Seat List</strong> summary.</li>
+              <li>Includes a <strong>Print</strong> view formatted for printing or saving as a PDF.</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section id="getting-started">
+        <h2>Getting Started</h2>
+        <ol class="main-steps">
+          <li>
+            <span class="step-heading">Save <code>seating_plan_generator.html</code> to your computer from SchoolBase:</span>
+            <ol class="step-list">
+              <li>Select students &rarr; <strong>Actions</strong> &rarr; <strong>Reports</strong> &rarr; <strong>Photographs</strong>.</li>
+              <li>Save as <code>.xlsx</code>.</li>
+            </ol>
+          </li>
+          <li>
+            <span class="step-heading">Open <code>seating_plan_generator.html</code></span> in any modern web browser (Chrome, Edge, Firefox, or Safari).
+          </li>
+          <li>
+            <span class="step-heading">Start experimenting:</span> Use the pre-loaded random demo class, click <strong>Import Excel (.xlsx)</strong>, or drag and drop a <code>.xlsx</code> file onto the dropzone in the left sidebar.
+          </li>
+        </ol>
+      </section>
+
+      <section id="exporting-sharing">
+        <h2>Exporting &amp; Sharing</h2>
+        <ul class="export-list">
+          <li>
+            Click <strong>Export Excel (.xlsx)</strong> in the top toolbar to download an <code>.xlsx</code> workbook containing your current seating layout, student names, form/group tags, and embedded photos.
+          </li>
+          <li>
+            Click <strong>Print</strong> to open the print dialog with navigation and editing controls hidden.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      Classroom Seating Plan Generator &mdash; Self-Contained Browser Application (<code>seating_plan_generator.html</code>)
+    </footer>
+  </div>
+</body>
+</html>
